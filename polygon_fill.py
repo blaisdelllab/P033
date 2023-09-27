@@ -40,7 +40,7 @@ else:
 TIME = 0 # Gives a metric for relevative efficiency
 
 if operant_box_version:
-    data_folder_directory = str(path.expanduser('~'))+"/Desktop/Experiments/P033/P033c_StainedGlass_Data"
+    data_folder_directory = str(path.expanduser('~'))+"/Desktop/Data/P033_data/P033c_StainedGlass_Data"
 else:
     data_folder_directory  = getcwd() + "/P033c_StainedGlass_Data"
 
@@ -87,7 +87,7 @@ class Paint:
                                    expand = True)
             
             # Canvas save directory
-            self.save_directory = str(path.expanduser('~'))+"/Desktop/Experiments/P033/Pigeon_Art"
+            self.save_directory = str(path.expanduser('~'))+"/Desktop/Data/Pigeon_Art"
 
         else:
             self.width, self.height = 1024, 768
