@@ -2,7 +2,7 @@
 # spring of 2022. The goal of the program was to create a "stained-glass" type of canvas
 # for pigeons to draw on.
 
-# It was last updated September 9, 2023
+# It was last updated November 14, 2023
 
 # First we import the libraries relevant for this project
 from tkinter import Tk, Canvas, BOTH
@@ -15,6 +15,7 @@ from random import randint
 from os import path, getcwd, mkdir
 from csv import writer, QUOTE_MINIMAL
 from PIL import Image
+from csv import reader
 
 
 # The first variable declared is whether the program is the operant box version
@@ -201,9 +202,19 @@ class Paint:
         else:
             self.experiment = "NA"
             
-        self.box_num = "NA"
+        if operant_box_version:
+            box_num_csv_path = "/home/blaisdelllab/Desktop/Box_Info/Box_number.txt"
+            with open(box_num_csv_path, 'r') as file:
+                f = reader(file)
+                # Assuming there is only one row and one column in the CSV file...
+                for row in f:
+                    # Convert the value to the appropriate data type (e.g., int)
+                    self.box_num = int(row[0])
+        else:
+            self.box_num = "NA"
+            
         self.prev_reinforcers_earned = "NA"
-        self.P033_phase = "P033c"
+        self.P033_phase = "P033c-LinesWhileDrawing"
 
         # make the entire canvas a polygon
         offset = 4
@@ -216,8 +227,8 @@ class Paint:
         self.drawLine([(0-offset, self.height+offset),
                        (0-offset, 0-offset)]) # lower-left to upper-left
         
-        # Remove lines from drawing (can add back in with keybound command)
-        self.toggleLines("event")
+        # # Remove lines from drawing (can add back in with keybound command)
+        # self.toggleLines("event")
         
     # generates a random color
     def generateColor(self):
@@ -563,7 +574,7 @@ class Paint:
         # session_data_matrix variable, named after the subject, date, and
         # training phase.
         self.write_data(None) # Writes end of session row to df
-        myFile_loc = f"{data_folder_directory}/{self.subject}/P033c_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_StainedGlassData.csv" # location of written .csv
+        myFile_loc = f"{data_folder_directory}/{self.subject}/P033c_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_StainedGlassData3-LinesRemoved.csv" # location of written .csv
         
         # This loop writes the data in the matrix to the .csv              
         edit_myFile = open(myFile_loc, 'w', newline='')
@@ -574,6 +585,9 @@ class Paint:
             
     def exit_program(self, event):
         print("Escape key pressed")
+        # Remove lines from drawing (can add back in with keybound command)
+        self.toggleLines("event")
+        print("- Lines removed from Canvas")
         self.write_comp_data()
         self.save_file()
         self.canvas.destroy()
@@ -587,9 +601,9 @@ class Paint:
                            "Life's Purpose"]
         rand_select_index = randint(0, len(list_of_options))
         rand_select = list_of_options[rand_select_index]
-        if messagebox.askyesno("Save?", f"Save {self.subject}'s {rand_select}?"):
+        if messagebox.askyesno("Save?", f"Save {self.subject}'s {rand_select}? \n (lines will be removed)"):
             now = datetime.now()
-            file_name = f"{self.save_directory}/{self.subject}_{now.strftime('%m-%d-%Y_Time-%H-%M-%S')}_stained_glass_1"
+            file_name = f"{self.save_directory}/{self.subject}_{now.strftime('%m-%d-%Y_Time-%H-%M-%S')}_stained_glass_3"
             filepng = file_name + ".png"
     
             if not path.exists(filepng) or messagebox.askyesno("File already exists", "Overwrite?"):
