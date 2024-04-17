@@ -2,11 +2,7 @@
 # spring of 2022. The goal of the program was to create a "stained-glass" type of canvas
 # for pigeons to draw on.
 
-# This version of the paint program tracks responses as normal, but does NOT
-# cause any changes on the screen itself.
-
-
-# It was last updated March 18, 2024
+# It was last updated November 14, 2023
 
 # First we import the libraries relevant for this project
 from tkinter import Tk, Canvas, BOTH
@@ -127,8 +123,7 @@ class Paint:
 
         # toggle variables
         self.demo = 0
-        self.showLines = 0
-        self.showShapes = 0
+        self.showLines = 1
         
         # Below, we store all necessary data
         self.currLineIndex = 0 # increment after every line drawn
@@ -140,7 +135,6 @@ class Paint:
 
         # Store all line ids in a list. When we need to remove lines, this is useful.
         self.lineIds = []
-        self.polygonIds = []
         
         # An adjacency list to store all vertices and edges of our directed graph
         self.graph = {}
@@ -220,7 +214,7 @@ class Paint:
             self.box_num = "NA"
             
         self.prev_reinforcers_earned = "NA"
-        self.P033_phase = "P033c-StainedGlassBlankCanvas"
+        self.P033_phase = "P033c-LinesWhileDrawing"
 
         # make the entire canvas a polygon
         offset = 4
@@ -370,15 +364,12 @@ class Paint:
             if isNew:
                 color = self.generateColor()
                 id = self.canvas.create_polygon(polygon, fill=color, outline=color, width=0.5)
-                if not self.showShapes and len(self.polygonIds) > 0:
-                    self.canvas.delete(id)
                 self.polygons[polygon] = id # add new polygon to list
-                self.polygonIds.append(id)
-            
+                # 
         
         # print("polygons:")
         # for p in self.polygons:
-        #      printPolygon(p, end=' | ')
+        #     printPolygon(p, end=' | ')
 
     # redraw all lines
     def drawLines(self):
@@ -392,22 +383,6 @@ class Paint:
         for line in self.lines.values():
             id = self.canvas.create_line(line, width=0.5)
             self.lineIds.append(id)
-
-
-    # redraw all polygons
-    def drawPolygons(self):
-        # remove all current polygons
-        for id in self.polygonIds[1:]:
-            self.canvas.delete(id)
-        
-        self.polygonIds = [self.polygonIds[0]]
-        
-        print(self.polygons)
-        # draw all polygons
-        for p in list(self.polygons.keys())[1:]:
-            color = self.generateColor()
-            id = self.canvas.create_polygon(p, fill=color, outline=color, width=0.5)
-            self.polygonIds.append(id)
 
     # function to extend line by a factor of d. 
     # this is useful for intersection detection
@@ -525,19 +500,6 @@ class Paint:
                 self.canvas.delete(id)
             self.showLines = 0
 
-    def toggleShapes(self, event):
-        if not self.showShapes:
-            self.drawPolygons()
-            # If lines should be shown, draw them over the top
-            if self.showLines:
-                self.drawLines()
-            self.showShapes = 1
-        else:
-            for id in self.polygonIds[1:]:
-                self.canvas.delete(id)
-            self.showShapes = 0
-
-
     def toggleDemo(self, event):
         if not self.demo:
             self.drawDemoLabels()
@@ -612,7 +574,7 @@ class Paint:
         # session_data_matrix variable, named after the subject, date, and
         # training phase.
         self.write_data(None) # Writes end of session row to df
-        myFile_loc = f"{data_folder_directory}/{self.subject}/P033c_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_StainedGlassData4-BlankCanvas.csv" # location of written .csv
+        myFile_loc = f"{data_folder_directory}/{self.subject}/P033c_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_StainedGlassData3-LinesRemoved.csv" # location of written .csv
         
         # This loop writes the data in the matrix to the .csv              
         edit_myFile = open(myFile_loc, 'w', newline='')
@@ -623,12 +585,9 @@ class Paint:
             
     def exit_program(self, event):
         print("Escape key pressed")
-        # Add lines back into Canvas (can add back in with keybound command)
-        if not self.showLines:
-            self.toggleLines("event")
-        if not self.showShapes:
-            self.toggleShapes("event")
-        print("- Lines and Shapes added back to Canvas")
+        # Remove lines from drawing (can add back in with keybound command)
+        self.toggleLines("event")
+        print("- Lines removed from Canvas")
         self.write_comp_data()
         self.save_file()
         self.canvas.destroy()
@@ -642,9 +601,9 @@ class Paint:
                            "Life's Purpose"]
         rand_select_index = randint(0, len(list_of_options))
         rand_select = list_of_options[rand_select_index]
-        if messagebox.askyesno("Save?", f"Save {self.subject}'s {rand_select}? \n (lines/shapes will be added)"):
+        if messagebox.askyesno("Save?", f"Save {self.subject}'s {rand_select}? \n (lines will be removed)"):
             now = datetime.now()
-            file_name = f"{self.save_directory}/{self.subject}_{now.strftime('%m-%d-%Y_Time-%H-%M-%S')}_stained_glass_4_blank_canvas"
+            file_name = f"{self.save_directory}/{self.subject}_{now.strftime('%m-%d-%Y_Time-%H-%M-%S')}_stained_glass_3"
             filepng = file_name + ".png"
     
             if not path.exists(filepng) or messagebox.askyesno("File already exists", "Overwrite?"):
@@ -676,7 +635,6 @@ def main(artist_name):
     root.bind("<Motion>", paint.onMouseMove)
     root.bind("<space>", paint.toggleDemo)
     root.bind("l", paint.toggleLines)
-    root.bind("s", paint.toggleShapes)
 
     root.mainloop()
 
