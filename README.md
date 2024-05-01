@@ -1,5 +1,6 @@
-# P033
-Pigeon Art Project Programs
+# P033 Pigeon Art Project Program
+
+These are our art programs that allow pigeon experimental subjects to paint on operant box screens. 
 
 
 Things to change on your end:
