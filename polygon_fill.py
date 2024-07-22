@@ -1,15 +1,19 @@
-# This is a python program written by Paul Gan, Robert Tsai, & Cyrus Kirkman in
-# spring of 2022. The goal of the program was to create a "stained-glass" type of canvas
-# for pigeons to draw on.
+# This is a python program written by Paul Gan, Robert Tsai, Cameron Guo, & 
+# Cyrus Kirkmanspring of 2022. The goal of the program was to create a 
+# "stained-glass" type of canvas for pigeons to draw on.
 
-# It was last updated November 14, 2023
+# This version of the program adopted a "press-to-play" procedure wherein every
+# 60 s the canvas would go blank and a key would appear. Pigeons needed to 
+# peck this key to access their canvas.
+
+# It was last updated April 14, 2024
 
 # First we import the libraries relevant for this project
 from tkinter import Tk, Canvas, BOTH
 from graph import Graph
 from tkinter import messagebox
 import functools
-from time import perf_counter
+from time import perf_counter, sleep
 from datetime import datetime, date
 from random import randint
 from os import path, getcwd, mkdir
@@ -41,9 +45,9 @@ else:
 TIME = 0 # Gives a metric for relevative efficiency
 
 if operant_box_version:
-    data_folder_directory = str(path.expanduser('~'))+"/Desktop/Data/P033_data/P033c_StainedGlass_Data"
+    data_folder_directory = str(path.expanduser('~'))+"/Desktop/Data/P033_data/P033d_CoverWButton_Data"
 else:
-    data_folder_directory  = getcwd() + "/P033c_StainedGlass_Data"
+    data_folder_directory  = getcwd() + "/P033d_CoverWButton_Data"
 
 # Create macro folder if it does not exist
 try:
@@ -77,6 +81,9 @@ class Point:
 class Paint:
     def __init__(self, root, artist_name):
         self.root = root
+        ubbindKeys()
+        self.cover_id = None
+        self.button_id = None
         if operant_box_version:
             self.width, self.height = 1024, 768
             self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
@@ -89,9 +96,9 @@ class Paint:
             
             # Canvas save directory
             self.save_directory = str(path.expanduser('~'))+"/Desktop/Data/Pigeon_Art"
-
+            
         else:
-            self.width, self.height = 1024, 768
+            self.width, self.height = 1024, 500 #768
             self.canvas = Canvas(root, width=self.width, height=self.height)
             self.canvas.pack()
             # Canvas save directory
@@ -169,8 +176,8 @@ class Paint:
         # Data is written every time a peck happens
         self.session_data_frame = [] #This where trial-by-trial data is stored
         data_headers = [
-            "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-             "Event", "NPolygons","NDots", "NLines",  "NIslands", "NColors", 
+            "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
+             "NPolygons","NDots", "NLines", 
              "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
@@ -187,6 +194,7 @@ class Paint:
         self.PrevY = "NA"
         self.background_color = "NA" # Starts NA, gets changed at beginning of trial
         self.dot_counter = 0 # Counts the number of pecks
+        self.button_peck_counter = 0 # Counts the number of button pecks
         self.num_islands = "NA"
         self.polygon_type = "NA"
         # This subject assigning process is limited to birds that are currently running
@@ -196,9 +204,9 @@ class Paint:
         elif self.subject in ["Athena", "Bon Jovi", "Cousteau", "Darwin",
                          "Shy Guy", "Bowser", "Yoshi"]:
             self.experiment = "P035"
-        elif self.subject in ["Zappa", "Joplin", "Ozzy", "Sting",
-                         "Jagger", "Iggy", "Evaristo", "Kurt"]:
-            self.experiment = "P037"
+        elif self.subject in ["Hendrix", "Zappa", "Joplin", "Ozzy", "Sting",
+                         "Jagger", "Iggy", "Evaristo", "Kurt", "Bowie"]:
+            self.experiment = "P003e"
         else:
             self.experiment = "NA"
             
@@ -214,7 +222,7 @@ class Paint:
             self.box_num = "NA"
             
         self.prev_reinforcers_earned = "NA"
-        self.P033_phase = "P033c-LinesWhileDrawing"
+        self.P033_phase = "P033d-CoverWButton"
 
         # make the entire canvas a polygon
         offset = 4
@@ -229,6 +237,55 @@ class Paint:
         
         # # Remove lines from drawing (can add back in with keybound command)
         # self.toggleLines("event")
+        self.canvasCover()
+        
+        
+    # covers canvas
+    def canvasCover(self):
+        # First, unbind keys
+        ubbindKeys()
+        
+        # Next, a data point for timing when exactly the cover is presented
+        self.write_data(None, "canvas_covered")
+        
+        
+        # Make a rectangle to literally cover the canvas
+        self.cover_id = self.canvas.create_rectangle(0, 0, self.width, self.height, fill="black", outline="black", tag="cover")
+                
+        # Attach function to track pecks on that cover
+        self.canvas.tag_bind("cover",
+                             "<Button-1>",
+                             lambda event, 
+                             event_type = "cover_peck": 
+                                 self.write_data(event, event_type))
+            
+        # Next, build a triangular button
+        # This is the function tied to button
+        def deleteCover(event):
+            # Delete cover and button
+            self.write_data(event, "button_pressed")
+            self.button_peck_counter += 1
+            print(f"\n{'*'*30} Effort {self.button_peck_counter} begins {'*'*30}") 
+            self.delete_items()
+            # Bind our painting tools
+            bindKeys()
+            # Last, set up a timer for the next cover
+            self.root.after(5 * 1000,
+                            self.canvasCover)
+            
+
+        # Define triangle coordinates
+        x1, y1 = self.width - 175, self.height - 150
+        x2, y2 = self.width - 100, self.height - 50
+        x3, y3 = self.width - 250, self.height - 50
+
+        # Draw the triangle
+        self.button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red", tag="button")
+        self.canvas.tag_bind("button",
+                             "<Button-1>",
+                             lambda event: deleteCover(event))
+        
+        
         
     # generates a random color
     def generateColor(self):
@@ -474,7 +531,7 @@ class Paint:
             self.x, self.y = event.x, event.y
             self.draw = True
         # Write data for click
-        self.write_data(event)
+        self.write_data(event, "canvas_peck")
 
     # callback for right click
     def onRightButton(self, event):
@@ -510,7 +567,7 @@ class Paint:
             self.demoLabels = []
             self.demo = 0
         
-    def write_data(self, event):
+    def write_data(self, event, event_type):
         # This function writes a new data line after EVERY peck. Data is
         # organized into a matrix (just a list/vector with two dimensions,
         # similar to a table). This matrix is appended to throughout the 
@@ -518,10 +575,10 @@ class Paint:
         if event != None: 
             x, y = event.x, event.y
             self.dot_counter += 1
-            outcome = "peck"
+            #event_type = "peck"
         else: # There are certain data events that are not pecks.
             x, y = "NA", "NA"   
-            outcome = "SessionEnds"
+            #event_type = "SessionEnds"
         
         # Line length calcultion
         if "NA" not in [self.PrevX, self.PrevY, x, y]:
@@ -529,7 +586,17 @@ class Paint:
         else:
             line_length = "NA"
             
+        if event_type is None:
+            event_type = "Session_End"
+        if x is None:
+            x = "NA"
+        if y is None:
+            y = "NA"
+            
+        print(f"{event_type:>30} | x: {x: ^3} y: {y:^3} | {str(datetime.now() - self.start_time)}")
+        
         self.session_data_frame.append([
+            event_type,
             str(datetime.now() - self.start_time), # SessionTime as datetime object
             str(datetime.now() - self.previous_response), # IRI
             x, # X coordinate of a peck
@@ -537,12 +604,10 @@ class Paint:
             self.PrevX, # Previous x coordinate
             self.PrevY, # Previous y coordinate
             line_length,
-            outcome,
+            #outcome,
             len(self.polygons) - 1, # Number of polygons w/o background (?)
             self.dot_counter, # Number of points
             len(self.lineIds) - 4, # Number of lines
-            self.num_islands, # EMPTY
-            "NA", # "N colors",
             self.background_color,
             self.start_time,
             self.experiment,
@@ -560,21 +625,28 @@ class Paint:
             self.PrevY = y
         
         data_headers = [
-            "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-             "Event", "NPolygons","NDots", "NLines",  "NIslands", "NColors", 
+            "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
+              "NPolygons","NDots", "NLines", 
              "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
 
-        
+    def delete_items(self):
+        if self.cover_id is not None:
+            self.canvas.delete(self.cover_id)
+            self.cover_id = None
+        if self.button_id is not None:
+            self.canvas.delete(self.button_id)
+            self.button_id = None
+            
     def write_comp_data(self):
         # The following function creates a .csv data document. It is once
         # the session finishes (SessionEnded). If the first time the 
         # function is called, it will produce a new .csv out of the
         # session_data_matrix variable, named after the subject, date, and
         # training phase.
-        self.write_data(None) # Writes end of session row to df
-        myFile_loc = f"{data_folder_directory}/{self.subject}/P033c_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_StainedGlassData3-LinesRemoved.csv" # location of written .csv
+        self.write_data(None, None) # Writes end of session row to df
+        myFile_loc = f"{data_folder_directory}/{self.subject}/P033d_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_CoverWButton.csv" # location of written .csv
         
         # This loop writes the data in the matrix to the .csv              
         edit_myFile = open(myFile_loc, 'w', newline='')
@@ -584,11 +656,13 @@ class Paint:
             print(f"\n- Data file written to {myFile_loc}")
             
     def exit_program(self, event):
+        self.write_comp_data()
         print("Escape key pressed")
         # Remove lines from drawing (can add back in with keybound command)
         self.toggleLines("event")
         print("- Lines removed from Canvas")
-        self.write_comp_data()
+        #self.write_comp_data()
+        self.delete_items()
         self.save_file()
         self.canvas.destroy()
         self.root.after(1, self.root.destroy())
@@ -599,7 +673,7 @@ class Paint:
                            "Future NFT", "Money-Maker", "Handiwork",
                            "Magnum Opus", "Craft", "Thesis Project",
                            "Life's Purpose"]
-        rand_select_index = randint(0, len(list_of_options))
+        rand_select_index = randint(0, len(list_of_options) - 1)
         rand_select = list_of_options[rand_select_index]
         if messagebox.askyesno("Save?", f"Save {self.subject}'s {rand_select}? \n (lines will be removed)"):
             now = datetime.now()
@@ -620,6 +694,7 @@ class Paint:
         
 
 def main(artist_name):
+    global root, paint
     print("(l) toggle lines")
     print("(spacebar) toggle labels")
     print("left mouse button to draw")
@@ -629,6 +704,11 @@ def main(artist_name):
     root.title("Paint Program with Polygon Detection")
     root.resizable(False, False)
     paint = Paint(root, artist_name) # Pass artist name to program
+
+    root.mainloop()
+    
+def bindKeys():
+    global root
     # Bind out keys...
     root.bind("<ButtonPress-1>", paint.onLeftButton)
     root.bind("<ButtonPress-2>", paint.onRightButton)
@@ -636,7 +716,15 @@ def main(artist_name):
     root.bind("<space>", paint.toggleDemo)
     root.bind("l", paint.toggleLines)
 
-    root.mainloop()
+def ubbindKeys():
+    global root
+    # Bind out keys...
+    root.unbind("<ButtonPress-1>")
+    root.unbind("<ButtonPress-2>")
+    root.unbind("<Motion>")
+    root.unbind("<space>")
+    root.unbind("l")
+    
 
 # This runs at the start
 if __name__ == "__main__":
