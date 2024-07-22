@@ -6,7 +6,7 @@
 # 60 s the canvas would go blank and a key would appear. Pigeons needed to 
 # peck this key to access their canvas.
 
-# It was last updated April 14, 2024
+# It was last updated Jul 22, 2024
 
 # First we import the libraries relevant for this project
 from tkinter import Tk, Canvas, BOTH
@@ -198,13 +198,13 @@ class Paint:
         self.num_islands = "NA"
         self.polygon_type = "NA"
         # This subject assigning process is limited to birds that are currently running
-        if self.subject in ["Durrell","Peach","Luigi","Odin", "Hawthorne",
+        if self.subject in ["Peach","Luigi",
                        "Waluigi", "Wario", "Wenchang"]:
             self.experiment = "P034b"
         elif self.subject in ["Athena", "Bon Jovi", "Cousteau", "Darwin",
                          "Shy Guy", "Bowser", "Yoshi"]:
             self.experiment = "P035"
-        elif self.subject in ["Hendrix", "Zappa", "Joplin", "Ozzy", "Sting",
+        elif self.subject in ["Hendrix", "Zappa", "Joplin", "Sting",
                          "Jagger", "Iggy", "Evaristo", "Kurt", "Bowie"]:
             self.experiment = "P003e"
         else:
@@ -270,7 +270,7 @@ class Paint:
             # Bind our painting tools
             bindKeys()
             # Last, set up a timer for the next cover
-            self.root.after(5 * 1000,
+            self.root.after(30 * 1000,
                             self.canvasCover)
             
 
