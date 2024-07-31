@@ -280,7 +280,12 @@ class Paint:
         x3, y3 = self.width - 250, self.height - 50
 
         # Draw the triangle
-        self.button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red", tag="button")
+        self.visible_button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red")
+        larger_x1, larger_y1 = self.width - 175, self.height - 200
+        larger_x2, larger_y2 = self.width - 50, self.height - 25
+        larger_x3, larger_y3 = self.width - 300, self.height - 25
+        self.button_id = self.canvas.create_polygon(larger_x1, larger_y1, larger_x2, larger_y2, larger_x3, larger_y3,
+                                                outline="", fill="", tag="button")
         self.canvas.tag_bind("button",
                              "<Button-1>",
                              lambda event: deleteCover(event))
@@ -638,6 +643,8 @@ class Paint:
         if self.button_id is not None:
             self.canvas.delete(self.button_id)
             self.button_id = None
+            self.canvas.delete(self.visible_button_id)
+            self.visible_button_id = None
             
     def write_comp_data(self):
         # The following function creates a .csv data document. It is once
