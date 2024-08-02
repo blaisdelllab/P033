@@ -275,15 +275,15 @@ class Paint:
             
 
         # Define triangle coordinates
-        x1, y1 = self.width - 175, self.height - 150
-        x2, y2 = self.width - 100, self.height - 50
-        x3, y3 = self.width - 250, self.height - 50
+        x1, y1 = self.width - 200, self.height - 200
+        x2, y2 = self.width - 125, self.height - 100
+        x3, y3 = self.width - 275, self.height - 100
 
         # Draw the triangle
         self.visible_button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red")
-        larger_x1, larger_y1 = self.width - 175, self.height - 200
-        larger_x2, larger_y2 = self.width - 50, self.height - 25
-        larger_x3, larger_y3 = self.width - 300, self.height - 25
+        larger_x1, larger_y1 = self.width - 200, self.height - 250
+        larger_x2, larger_y2 = self.width - 75, self.height - 75
+        larger_x3, larger_y3 = self.width - 325, self.height - 75
         self.button_id = self.canvas.create_polygon(larger_x1, larger_y1, larger_x2, larger_y2, larger_x3, larger_y3,
                                                 outline="", fill="", tag="button")
         self.canvas.tag_bind("button",
@@ -598,7 +598,7 @@ class Paint:
         if y is None:
             y = "NA"
             
-        print(f"{event_type:>30} | x: {x: ^3} y: {y:^3} | {str(datetime.now() - self.start_time)}")
+        print(f"{event_type:>24} | x: {x: ^3} y: {y:^3} | {str(datetime.now() - self.start_time)} | nPoly: {len(self.polygons) - 1}")
         
         self.session_data_frame.append([
             event_type,
