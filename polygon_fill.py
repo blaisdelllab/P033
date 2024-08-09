@@ -81,7 +81,7 @@ class Point:
 class Paint:
     def __init__(self, root, artist_name):
         self.root = root
-        ubbindKeys()
+        #ubbindKeys()
         self.cover_id = None
         self.button_id = None
         if operant_box_version:
@@ -177,7 +177,7 @@ class Paint:
         self.session_data_frame = [] #This where trial-by-trial data is stored
         data_headers = [
             "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-             "NPolygons","NDots", "NLines", 
+             "NPolygons","NDots", "NLines", "Efforts",
              "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
@@ -237,14 +237,16 @@ class Paint:
         
         # # Remove lines from drawing (can add back in with keybound command)
         # self.toggleLines("event")
-        self.canvasCover()
-        
-        
+        #if len(self.polygons) > 1:
+            #self.canvasCover()
+        self.coverState = None
+        self.firstTime = True
+        self.buttonPressed = False
     # covers canvas
     def canvasCover(self):
         # First, unbind keys
-        ubbindKeys()
-        
+        #ubbindKeys()
+        self.coverState = True
         # Next, a data point for timing when exactly the cover is presented
         self.write_data(None, "canvas_covered")
         
@@ -253,22 +255,25 @@ class Paint:
         self.cover_id = self.canvas.create_rectangle(0, 0, self.width, self.height, fill="black", outline="black", tag="cover")
                 
         # Attach function to track pecks on that cover
-        self.canvas.tag_bind("cover",
-                             "<Button-1>",
-                             lambda event, 
-                             event_type = "cover_peck": 
-                                 self.write_data(event, event_type))
+        #self.canvas.tag_bind("cover",
+                             #"<Button-1>",
+                             #lambda event, 
+                             #event_type = "cover_peck": 
+                                 #self.write_data(event, event_type))
             
         # Next, build a triangular button
         # This is the function tied to button
         def deleteCover(event):
             # Delete cover and button
+            
             self.write_data(event, "button_pressed")
             self.button_peck_counter += 1
             print(f"\n{'*'*30} Effort {self.button_peck_counter} begins {'*'*30}") 
             self.delete_items()
             # Bind our painting tools
-            bindKeys()
+            #bindKeys()
+            self.coverState = False
+            self.buttonPressed = True
             # Last, set up a timer for the next cover
             self.root.after(30 * 1000,
                             self.canvasCover)
@@ -280,6 +285,7 @@ class Paint:
         x3, y3 = self.width - 275, self.height - 100
 
         # Draw the triangle
+        #self.button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red", tag="button")
         self.visible_button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red")
         larger_x1, larger_y1 = self.width - 200, self.height - 250
         larger_x2, larger_y2 = self.width - 75, self.height - 75
@@ -429,6 +435,9 @@ class Paint:
                 self.polygons[polygon] = id # add new polygon to list
                 # 
         
+        if len(self.polygons) > 6 and self.firstTime:
+            self.canvasCover()
+            self.firstTime = False
         # print("polygons:")
         # for p in self.polygons:
         #     printPolygon(p, end=' | ')
@@ -526,17 +535,22 @@ class Paint:
     
     # callback for left click
     def onLeftButton(self, event):
-        # Write a data event on every press
-        if self.draw:
-            self.drawLine([(self.x, self.y), (event.x, event.y)])
-            if self.guideLine: self.canvas.delete(self.guideLine)
-            self.draw = False
-            self.x, self.y = None, None
+        if self.coverState:
+            self.write_data(event, "cover_peck")
+        elif self.buttonPressed:
+            self.buttonPressed = False
         else:
-            self.x, self.y = event.x, event.y
-            self.draw = True
-        # Write data for click
-        self.write_data(event, "canvas_peck")
+        # Write a data event on every press
+            if self.draw:
+                self.drawLine([(self.x, self.y), (event.x, event.y)])
+                if self.guideLine: self.canvas.delete(self.guideLine)
+                self.draw = False
+                self.x, self.y = None, None
+            else:
+                self.x, self.y = event.x, event.y
+                self.draw = True
+            # Write data for click
+            self.write_data(event, "canvas_peck")
 
     # callback for right click
     def onRightButton(self, event):
@@ -548,9 +562,12 @@ class Paint:
     # callback for mouse move
     def onMouseMove(self, event):
         # redraw guideline
-        if self.guideLine: self.canvas.delete(self.guideLine)
-        if self.x is not None and self.y is not None:
-            self.guideLine = self.canvas.create_line((self.x, self.y, event.x, event.y), fill="red")
+        if self.coverState:
+            pass
+        else:
+            if self.guideLine: self.canvas.delete(self.guideLine)
+            if self.x is not None and self.y is not None:
+                self.guideLine = self.canvas.create_line((self.x, self.y, event.x, event.y), fill="red")
 
     def toggleLines(self, event):
         if not self.showLines:
@@ -613,6 +630,7 @@ class Paint:
             len(self.polygons) - 1, # Number of polygons w/o background (?)
             self.dot_counter, # Number of points
             len(self.lineIds) - 4, # Number of lines
+            self.button_peck_counter,
             self.background_color,
             self.start_time,
             self.experiment,
@@ -631,7 +649,7 @@ class Paint:
         
         data_headers = [
             "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-              "NPolygons","NDots", "NLines", 
+              "NPolygons","NDots", "NLines", "Efforts",
              "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
@@ -711,26 +729,32 @@ def main(artist_name):
     root.title("Paint Program with Polygon Detection")
     root.resizable(False, False)
     paint = Paint(root, artist_name) # Pass artist name to program
-
-    root.mainloop()
-    
-def bindKeys():
-    global root
-    # Bind out keys...
+    #bindKeys(paint)
     root.bind("<ButtonPress-1>", paint.onLeftButton)
     root.bind("<ButtonPress-2>", paint.onRightButton)
     root.bind("<Motion>", paint.onMouseMove)
     root.bind("<space>", paint.toggleDemo)
     root.bind("l", paint.toggleLines)
 
-def ubbindKeys():
-    global root
+    root.mainloop()
+    
+#def bindKeys(p):
+    #global root
     # Bind out keys...
-    root.unbind("<ButtonPress-1>")
-    root.unbind("<ButtonPress-2>")
-    root.unbind("<Motion>")
-    root.unbind("<space>")
-    root.unbind("l")
+    #root.bind("<ButtonPress-1>", paint.onLeftButton)
+    #root.bind("<ButtonPress-2>", paint.onRightButton)
+    #root.bind("<Motion>", paint.onMouseMove)
+    #root.bind("<space>", paint.toggleDemo)
+    #root.bind("l", paint.toggleLines)
+
+#def ubbindKeys():
+    #global root
+    # Bind out keys...
+    #root.unbind("<ButtonPress-1>")
+    #root.unbind("<ButtonPress-2>")
+   # root.unbind("<Motion>")
+   # root.unbind("<space>")
+    #root.unbind("l")
     
 
 # This runs at the start
