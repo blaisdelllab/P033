@@ -177,8 +177,8 @@ class Paint:
         self.session_data_frame = [] #This where trial-by-trial data is stored
         data_headers = [
             "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-             "NPolygons","NDots", "NLines", "Efforts",
-             "BackgroundColor","StartTime", "Experiment", "P033_Phase",
+             "NPolygons","NDots", "NLines", "Efforts", "PaintButtonPeck", "ColorButtonPeck",
+             "Placement", "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
         self.session_data_frame.append(data_headers) # First row of matrix is the column headers
@@ -194,7 +194,8 @@ class Paint:
         self.PrevY = "NA"
         self.background_color = "NA" # Starts NA, gets changed at beginning of trial
         self.dot_counter = 0 # Counts the number of pecks
-        self.button_peck_counter = 0 # Counts the number of button pecks
+        self.paint_button_peck_counter = 0 # Counts the number of paint button pecks
+        self.color_button_peck_counter = 0 # Counts the number of color button pecks
         self.num_islands = "NA"
         self.polygon_type = "NA"
         # This subject assigning process is limited to birds that are currently running
@@ -241,62 +242,201 @@ class Paint:
             #self.canvasCover()
         self.coverState = None
         self.firstTime = True
-        self.buttonPressed = False
+        self.paintButtonPressed = False
+        self.colorButtonPressed = False
+        self.lastTwoPlacements = []
+        self.random_placement_index = "NA"
+        
+    def get_random_placement(self):
+        # Generate the new placement
+        if len(self.lastTwoPlacements) < 2:
+            new_placement = randint(0, 1)
+        else:
+            if self.lastTwoPlacements[-1] == self.lastTwoPlacements[-2]:
+                # If the last two are the same, flip the next value
+                new_placement = 1 - self.lastTwoPlacements[-1]
+            else:
+                # Otherwise, randomly choose again
+                new_placement = randint(0, 1)
+        
+        # Update the last two placements
+        self.lastTwoPlacements.append(new_placement)
+        if len(self.lastTwoPlacements) > 2:
+            self.lastTwoPlacements.pop(0)  # Keep only the last two values
+    
+        return new_placement
+        
     # covers canvas
     def canvasCover(self):
-        # First, unbind keys
-        #ubbindKeys()
         self.coverState = True
-        # Next, a data point for timing when exactly the cover is presented
+        self.colorButtonPressed = False
+        # data point for timing when exactly the cover is presented
         self.write_data(None, "canvas_covered")
-        
-        
+        self.x, self.y, self.draw = None, None, False
         # Make a rectangle to literally cover the canvas
-        self.cover_id = self.canvas.create_rectangle(0, 0, self.width, self.height, fill="black", outline="black", tag="cover")
-                
-        # Attach function to track pecks on that cover
-        #self.canvas.tag_bind("cover",
-                             #"<Button-1>",
-                             #lambda event, 
-                             #event_type = "cover_peck": 
-                                 #self.write_data(event, event_type))
+        self.cover_id = self.canvas.create_rectangle(0, 0, self.width,
+                       self.height, fill="black", outline="black", tag="cover")
+                                 
+        self.random_placement_index = self.get_random_placement() # randomizing button position
+        
+        if self.random_placement_index:
+            # print(self.random_placement_index)
+            # Condition: Paint Button On the Right, Color Button on the Left
+            
+            # PAINT BUTTON
+            # Define visible triangle coordinates
+            x11, y11 = self.width - 200, self.height - 200 # top
+            x12, y12 = self.width - 125, self.height - 100 # right
+            x13, y13 = self.width - 275, self.height - 100 # left
+
+            # Draw the visible triangle
+            self.visible_paint_button_id = self.canvas.create_polygon(x11, y11, 
+                                    x12, y12, x13, y13, fill="pale violet red")
+            
+            # Define invisible response field
+            #larger_x11, larger_y11 = self.width - 200, self.height - 250
+            #larger_x12, larger_y12 = self.width - 75, self.height - 75
+            #larger_x13, larger_y13 = self.width - 325, self.height - 75
+            
+            # Draw the invisible response field
+            #self.button_id = self.canvas.create_polygon(larger_x11, larger_y11,
+                                #larger_x12, larger_y12, larger_x13, larger_y13,
+                                #outline="", fill="", tag="paint_button")
+                                
+            x1_center = self.width - 200
+            y1_center = self.height - 130
+            radius = 100
+            
+            # Top-left corner
+            x0 = x1_center - radius
+            y0 = y1_center - radius
+            
+            # Bottom-right corner
+            x1 = x1_center + radius
+            y1 = y1_center + radius
+            
+            # Create the circle
+            self.invisible_paint_button_id = self.canvas.create_oval(x0, y0, x1, y1, fill="", outline="", tag="paint_button")
+
+            # COLORED BACKGROUND BUTTON
+            # Define visible square coordinates
+            x21, y21 = 125, self.height - 200 # buttom-left
+            x22, y22 = 225, self.height - 200 # buttom-right
+            x23, y23 = 125, self.height - 100 # top-left
+            x24, y24 = 225, self.height - 100 # top-right
+            
+            # Draw the visible square
+            self.visible_color_button_id = self.canvas.create_polygon(x21, y21, x22,
+                              y22, x24, y24, x23, y23, fill="olivedrab")
+            
+            x2_center = 175
+            y2_center = self.height - 150
+            radius = 100
+            
+            # Top-left corner
+            x2 = x2_center - radius
+            y2 = y2_center - radius
+            
+            # Bottom-right corner
+            x3 = x2_center + radius
+            y3 = y2_center + radius
+            
+            # Create the circle
+            self.invisible_color_button_id = self.canvas.create_oval(x2, y2, x3, y3, fill="", outline="", tag="color_button")
+
+        else:
+            # Condition: Paint Button On Left, Color Button on the Right
+            
+            # PAINT BUTTON
+            # Define visible square coordinates
+            x11, y11 = 200, self.height - 200 # top
+            x12, y12 = 125, self.height - 100 # left
+            x13, y13 = 275, self.height - 100 # right
+
+            # Draw the visible triangle
+            self.visible_paint_button_id = self.canvas.create_polygon(x11, y11, 
+                                    x12, y12, x13, y13, fill="pale violet red")
+            
+            x1_center = 200
+            y1_center = self.height - 130
+            radius = 100
+            
+            # Top-left corner
+            x0 = x1_center - radius
+            y0 = y1_center - radius
+            
+            # Bottom-right corner
+            x1 = x1_center + radius
+            y1 = y1_center + radius
+            
+            # Create the circle
+            self.invisible_paint_button_id = self.canvas.create_oval(x0, y0, x1, y1, fill="", outline="", tag="paint_button")
+            
+            # COLORED BACKGROUND BUTTON
+            # Define visible square coordinates
+            x21, y21 = self.width - 125, self.height - 200 # top-right
+            x22, y22 = self.width - 225, self.height - 200 # top-left
+            x23, y23 = self.width - 125, self.height - 100 # buttom-right
+            x24, y24 = self.width - 225, self.height - 100 # buttom-left
+            
+            # Draw the visible square
+            self.visible_color_button_id = self.canvas.create_polygon(x21, y21, x22,
+                              y22, x24, y24, x23, y23, fill="olivedrab")
+            
+            x2_center = self.width - 175
+            y2_center = self.height - 150
+            radius = 100
+            
+            # Top-left corner
+            x2 = x2_center - radius
+            y2 = y2_center - radius
+            
+            # Bottom-right corner
+            x3 = x2_center + radius
+            y3 = y2_center + radius
+            
+            # Create the circle
+            self.invisible_color_button_id = self.canvas.create_oval(x2, y2, x3, y3, fill="", outline="", tag="color_button")
             
         # Next, build a triangular button
         # This is the function tied to button
-        def deleteCover(event):
+        def coverToPaint(event):
             # Delete cover and button
-            
-            self.write_data(event, "button_pressed")
-            self.button_peck_counter += 1
-            print(f"\n{'*'*30} Effort {self.button_peck_counter} begins {'*'*30}") 
+            self.write_data(event, "paint_button_pressed")
+            self.paint_button_peck_counter += 1
+            print(f"\n{'*'*30} Effort {self.paint_button_peck_counter + self.color_button_peck_counter} begins (P{self.paint_button_peck_counter}C{self.color_button_peck_counter}) {'*'*30}") 
             self.delete_items()
             # Bind our painting tools
             #bindKeys()
             self.coverState = False
-            self.buttonPressed = True
+            self.paintButtonPressed = True
+            # Last, set up a timer for the next cover
+            self.root.after(30 * 1000,
+                            self.canvasCover)
+        
+        self.canvas.tag_bind("paint_button",
+                             "<Button-1>",
+                             lambda event: coverToPaint(event))
+        
+        def coverToColor(event):
+            # Delete cover and button
+            self.write_data(event, "color_button_pressed")
+            self.color_button_peck_counter += 1
+            print(f"\n{'*'*30} Effort {self.paint_button_peck_counter + self.color_button_peck_counter} begins (P{self.paint_button_peck_counter}C{self.color_button_peck_counter}) {'*'*30}") 
+            self.delete_items()
+            # Bind our painting tools
+            #bindKeys()
+            self.coverState = False
+            self.colorButtonPressed = True
+ 
             # Last, set up a timer for the next cover
             self.root.after(30 * 1000,
                             self.canvasCover)
             
-
-        # Define triangle coordinates
-        x1, y1 = self.width - 200, self.height - 200
-        x2, y2 = self.width - 125, self.height - 100
-        x3, y3 = self.width - 275, self.height - 100
-
-        # Draw the triangle
-        #self.button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red", tag="button")
-        self.visible_button_id = self.canvas.create_polygon(x1, y1, x2, y2, x3, y3, fill="pale violet red")
-        larger_x1, larger_y1 = self.width - 200, self.height - 250
-        larger_x2, larger_y2 = self.width - 75, self.height - 75
-        larger_x3, larger_y3 = self.width - 325, self.height - 75
-        self.button_id = self.canvas.create_polygon(larger_x1, larger_y1, larger_x2, larger_y2, larger_x3, larger_y3,
-                                                outline="", fill="", tag="button")
-        self.canvas.tag_bind("button",
+         
+        self.canvas.tag_bind("color_button",
                              "<Button-1>",
-                             lambda event: deleteCover(event))
-        
-        
+                             lambda event: coverToColor(event))
         
     # generates a random color
     def generateColor(self):
@@ -436,7 +576,8 @@ class Paint:
                 # 
         
         if len(self.polygons) > 6 and self.firstTime:
-            self.canvasCover()
+            #self.canvasCover()
+            self.root.after(3 * 1000, self.canvasCover)
             self.firstTime = False
         # print("polygons:")
         # for p in self.polygons:
@@ -537,8 +678,21 @@ class Paint:
     def onLeftButton(self, event):
         if self.coverState:
             self.write_data(event, "cover_peck")
-        elif self.buttonPressed:
-            self.buttonPressed = False
+        elif self.paintButtonPressed:
+            self.paintButtonPressed = False
+            self.canvas.delete("background")
+        elif self.colorButtonPressed:
+            self.write_data(event, "color_peck")
+            # Generate a random color
+            random_color = "#{:06x}".format(randint(0, 0xFFFFFF))
+        
+            # Delete any existing polygons with the tag "background"
+            self.canvas.delete("background")
+        
+            # Draw a new polygon with the random color
+            self.canvas.create_rectangle(0, 0, self.width, self.height,
+                          fill=random_color, outline="black", tag="background")
+            
         else:
         # Write a data event on every press
             if self.draw:
@@ -550,7 +704,7 @@ class Paint:
                 self.x, self.y = event.x, event.y
                 self.draw = True
             # Write data for click
-            self.write_data(event, "canvas_peck")
+            self.write_data(event, "paint_peck")
 
     # callback for right click
     def onRightButton(self, event):
@@ -562,7 +716,7 @@ class Paint:
     # callback for mouse move
     def onMouseMove(self, event):
         # redraw guideline
-        if self.coverState:
+        if self.coverState or self.colorButtonPressed:
             pass
         else:
             if self.guideLine: self.canvas.delete(self.guideLine)
@@ -630,7 +784,10 @@ class Paint:
             len(self.polygons) - 1, # Number of polygons w/o background (?)
             self.dot_counter, # Number of points
             len(self.lineIds) - 4, # Number of lines
-            self.button_peck_counter,
+            self.color_button_peck_counter + self.paint_button_peck_counter,
+            self.paint_button_peck_counter,
+            self.color_button_peck_counter,
+            self.random_placement_index,
             self.background_color,
             self.start_time,
             self.experiment,
@@ -649,8 +806,8 @@ class Paint:
         
         data_headers = [
             "EventType", "SessionTime", "IRI", "X1","Y1","PrevX","PrevY", "SizeOfLine", 
-              "NPolygons","NDots", "NLines", "Efforts",
-             "BackgroundColor","StartTime", "Experiment", "P033_Phase",
+              "NPolygons","NDots", "NLines", "Efforts", "PaintButtonPeck", "ColorButtonPeck",
+             "Placement", "BackgroundColor","StartTime", "Experiment", "P033_Phase",
              "PrevReinforcersEarned", "BoxNumber",  "Subject",  "Date"
             ]
 
@@ -658,11 +815,15 @@ class Paint:
         if self.cover_id is not None:
             self.canvas.delete(self.cover_id)
             self.cover_id = None
-        if self.button_id is not None:
-            self.canvas.delete(self.button_id)
-            self.button_id = None
-            self.canvas.delete(self.visible_button_id)
-            self.visible_button_id = None
+        if self.visible_paint_button_id is not None or self.visible_color_button_id is not None:
+            self.canvas.delete(self.invisible_paint_button_id)
+            self.invisible_paint_button_id = None
+            self.canvas.delete(self.invisible_color_button_id)
+            self.invisible_color_button_id = None
+            self.canvas.delete(self.visible_paint_button_id)
+            self.visible_paint_button_id = None
+            self.canvas.delete(self.visible_color_button_id)
+            self.visible_color_button_id = None
             
     def write_comp_data(self):
         # The following function creates a .csv data document. It is once
@@ -688,6 +849,7 @@ class Paint:
         print("- Lines removed from Canvas")
         #self.write_comp_data()
         self.delete_items()
+        self.canvas.delete("background")
         self.save_file()
         self.canvas.destroy()
         self.root.after(1, self.root.destroy())
