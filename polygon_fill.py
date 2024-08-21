@@ -246,6 +246,8 @@ class Paint:
         self.colorButtonPressed = False
         self.lastTwoPlacements = []
         self.random_placement_index = "NA"
+        self.visible_paint_button_id = None
+        self.visible_color_button_id = None
         
     def get_random_placement(self):
         # Generate the new placement
