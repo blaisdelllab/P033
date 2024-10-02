@@ -53,9 +53,9 @@ else:
 TIME = 0 # Gives a metric for relevative efficiency
 
 if operant_box_version:
-    data_folder_directory = str(os_path.expanduser('~'))+"/Desktop/Data/P033_data/P033d_CoverWButton_Data"
+    data_folder_directory = str(os_path.expanduser('~'))+"/Desktop/Data/P033_data/P033d_FoodvArt"
 else:
-    data_folder_directory  = getcwd() + "/P033d_CoverWButton_Data"
+    data_folder_directory  = getcwd() + "/P033d_FoodvArt"
 
 # Create macro folder if it does not exist
 try:
@@ -389,12 +389,37 @@ class Paint:
         self.visible_paint_button_id = None
         self.visible_color_button_id = None
         
-        # Call cover for first trial's choice
-        if self.subject != "TEST":
-            self.root.after(30 * 1000, 
-                            self.choicePhase)
-        else:
-            self.choicePhase()
+        self.place_birds_in_box()
+
+    def place_birds_in_box(self):
+        
+        def first_ITI(event):
+            print("Spacebar pressed -- SESSION STARTED") 
+            self.canvas.delete("text")
+            root.bind("<space>", paint.toggleDemo)
+            
+            # Call cover for first trial's choice
+            if self.subject != "TEST":
+                self.root.after(30 * 1000, 
+                                self.choicePhase)
+            else:
+                self.choicePhase()
+            
+            
+        self.canvas.create_rectangle(0, 0, self.width,
+                                     self.height,
+                                     fill="black",
+                                     outline="black",
+                                     tag = "bkgrd")
+        
+        self.canvas.create_text(512,374,
+                                      fill="white",
+                                      font="Times 25 italic bold",
+                                      text=f"P033d \n Place bird in box, then press space \n Subject: {self.subject} \n VR: {self.VR_val}",
+                                      tag = "text") 
+        root.unbind("<space>")
+        root.bind("<space>", first_ITI) # bind cursor state to "space" key
+        
         
     # covers canvas; where buttons are presented
     def choicePhase(self):
@@ -1052,7 +1077,7 @@ class Paint:
             line_length = "NA"
             
         if event_type is None:
-            event_type = "Session_End"
+            event_type = "NA"
         if x is None:
             x = "NA"
         if y is None:
@@ -1114,7 +1139,7 @@ class Paint:
         # each ITI. If the first time the function is called, it will produce
         # a new .csv out of the session_data_matrix variable, named after the
         # subject, date, and training phase.
-        self.write_data(None, None) # Writes end of session row to df
+        
         myFile_loc = f"{data_folder_directory}/{self.subject}/P033d_{self.subject}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_CoverWButton.csv" # location of written .csv
         
         # This loop writes the data in the matrix to the .csv              
@@ -1160,7 +1185,7 @@ def main(artist_name, VR_val, record_data):
     root.bind("<ButtonPress-1>", paint.onLeftButton)
     root.bind("<ButtonPress-2>", paint.onRightButton)
     root.bind("<Motion>", paint.onMouseMove)
-    root.bind("<space>", paint.toggleDemo)
+    # root.bind("<space>", paint.toggleDemo)
     root.bind("l", paint.toggleLines)
 
     root.mainloop()
