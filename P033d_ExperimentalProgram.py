@@ -1200,12 +1200,12 @@ class ExperimenterControlPanel(object):
         self.control_window.title("P033d Control Panel")
         ##  Next, setup variables within the control panel
         # Subject ID
-        self.pigeon_name_list = ["Bird1",
-                                 "Bird2",
-                                 "Bird3",
-                                 "Bird4",
-                                 "Bird5",
-                                 "Bird6"]
+        self.pigeon_name_list = ["Jagger",
+                                 "Herriot",
+                                 "Bowie",
+                                 "Iggy",
+                                 "Kurt",
+                                 "Hendrix"]
         self.pigeon_name_list.sort() # This alphabetizes the list
         self.pigeon_name_list.insert(0, "TEST")
         
