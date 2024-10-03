@@ -269,7 +269,7 @@ class Paint:
         
         
         # Assign the stimulus roles per bird (counterbalanced)
-        if self.subject in ["TEST", "Bird1", "Bird2", "Bird3"]:
+        if self.subject in ["TEST", "Jagger", "Herriot", "Kurt"]:
             self.food_button_icon = "triangle"
             self.art_button_icon = "hexagon"
         else:
@@ -1156,7 +1156,7 @@ class Paint:
         print("Escape key pressed")
         # Remove lines from drawing (can add back in with keybound command)
         self.toggleLines("event")
-        print("- Lines removed from Canvas")
+        # print("- Lines removed from Canvas")
         self.canvas.destroy()
         self.root.after(1, self.root.destroy())
 
