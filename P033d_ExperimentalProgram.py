@@ -736,6 +736,8 @@ class Paint:
                             True) # Turn on the hopper light
             rpi_board.set_servo_pulsewidth(servo_GPIO_num,
                                            hopper_up_val) # Move hopper to up position
+            rpi_board.write(house_light_GPIO_num,
+                                False)
         # Pass back to food choice
         self.root.after(self.hopper_duration,
                         lambda event = None: self.coverToFood(event))
