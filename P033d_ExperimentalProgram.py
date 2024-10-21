@@ -1154,6 +1154,12 @@ class Paint:
     def exit_program(self, event):
         self.write_comp_data()
         self.save_image()
+        rpi_board.write(house_light_GPIO_num,
+                                False) # Turn off the house light
+        rpi_board.write(hopper_light_GPIO_num,
+                                False) # Turn off the hopper light
+        rpi_board.set_servo_pulsewidth(servo_GPIO_num,
+                                               hopper_down_val)
         self.delete_items()
         print("Escape key pressed")
         # Remove lines from drawing (can add back in with keybound command)
