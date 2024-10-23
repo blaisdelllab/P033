@@ -263,6 +263,8 @@ class Paint:
         self.SessionEnds = False
         if self.subject == "TEST":
             self.hopper_duration  = 1000
+        elif self.subject in ["Iggy", "Jagger", "Bowie", "Hendrix"]:
+            self.hopper_duration  = 4500
         else:
             self.hopper_duration = 3000 # 3 sec
         self.ITI_duration = 5000 # ms
