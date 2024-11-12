@@ -139,7 +139,7 @@ class Paint:
         self.subject = artist_name # Stores the name of the painter
         if operant_box_version:
             self.width, self.height = 1024, 768
-            self.root.geometry(f"1920x{self.height}+{self.width}+0")
+            self.root.geometry(f"{self.width}x{self.height}+1920+0")
             self.root.attributes('-fullscreen',
                                  True)
             self.canvas = Canvas(root,
