@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 '''
 P033d: Preference for Digital Paint Access Compared to Food Reinforcers
     
