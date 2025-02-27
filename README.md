@@ -11,6 +11,7 @@ Things to change on your end:
 Dependencies:
 1) Python 3.0+
 2) Pillow (PIL)
-3) A image preview software that can view vectorized images (.eps) files. Google Drive can do this.
+3) Screeninfo
+4) A image preview software that can view vectorized images (.eps) files. Google Drive can do this.
 
    
