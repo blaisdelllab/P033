@@ -164,7 +164,7 @@ class PigeonPainter:
                                           width=self.panel_width,
                                           height=self.screen_height,
                                           bg="white", highlightthickness=0)
-            self.panel_canvas.place(x=self.width, y=0)
+            self.panel_canvas.place(x=self.root.winfo_screenwidth(), y=0)
             
             self.paint_width = self.screen_width - self.panel_width
             self.paint_height = self.screen_height
@@ -173,7 +173,7 @@ class PigeonPainter:
                                           height=self.paint_height,
                                           highlightthickness=0,
                                           bg="white")
-            self.paint_canvas.place(x=self.width + self.panel_width, y=0)
+            self.paint_canvas.place(x=self.root.winfo_screenwidth() + self.panel_width, y=0)
             
         else:
             self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
