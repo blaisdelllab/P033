@@ -168,7 +168,7 @@ class PigeonPainter:
             
             if operant_box_version:
                 self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
-                #self.root.attributes('-fullscreen', True)
+                self.root.attributes('-fullscreen', True)
         
                 # Panel Canvas on the right screen
                 self.panel_canvas = tk.Canvas(self.root,
