@@ -156,7 +156,8 @@ class PigeonPainter:
         # Panel canvas for T/S/C
         self.width, self.height = 1024, 768
         if operant_box_version:
-            self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
+            x_offset = self.root.winfo_screenwidth() + 10
+            self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
             self.root.attributes('-fullscreen',
                                  True)
             
