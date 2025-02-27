@@ -168,7 +168,7 @@ class PigeonPainter:
             
             if operant_box_version:
                 self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
-                self.root.attributes('-fullscreen', True)
+                #self.root.attributes('-fullscreen', True)
         
                 # Panel Canvas on the right screen
                 self.panel_canvas = tk.Canvas(self.root,
@@ -176,7 +176,7 @@ class PigeonPainter:
                                               height=self.screen_height,
                                               bg="white",
                                               highlightthickness=0)
-                self.panel_canvas.place(x=x_offset, y=0)
+                self.panel_canvas.place(x=0, y=0)
             
                 # Paint Canvas next to the panel
                 self.paint_width = self.screen_width - self.panel_width
@@ -186,7 +186,7 @@ class PigeonPainter:
                                               height=self.paint_height,
                                               highlightthickness=0,
                                               bg="white")
-                self.paint_canvas.place(x=x_offset + self.panel_width, y=0)
+                self.paint_canvas.place(x=self.panel_width, y=0)
             
             
             
@@ -211,7 +211,11 @@ class PigeonPainter:
             # self.paint_canvas.place(x=self.root.winfo_screenwidth() + self.panel_width, y=0)
             
         else:
+
             self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
+            
+            self.root.attributes('-fullscreen', True)
+
             self.panel_canvas = tk.Canvas(self.root,
                                           width=self.panel_width,
                                           height=self.screen_height,
