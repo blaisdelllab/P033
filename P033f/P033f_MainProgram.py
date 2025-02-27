@@ -188,34 +188,10 @@ class PigeonPainter:
                                               bg="white")
                 self.paint_canvas.place(x=self.panel_width, y=0)
             
-            
-            
-            # self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
-            # self.root.attributes('-fullscreen',
-            #                      True)
-            
-            # self.panel_canvas = tk.Canvas(self.root,
-            #                               width=self.panel_width,
-            #                               height=self.screen_height,
-            #                               bg="white",
-            #                               highlightthickness=0)
-            # self.panel_canvas.place(x=self.root.winfo_screenwidth(), y=0)
-            
-            # self.paint_width = self.screen_width - self.panel_width
-            # self.paint_height = self.screen_height
-            # self.paint_canvas = tk.Canvas(self.root,
-            #                               width=self.paint_width,
-            #                               height=self.paint_height,
-            #                               highlightthickness=0,
-            #                               bg="white")
-            # self.paint_canvas.place(x=self.root.winfo_screenwidth() + self.panel_width, y=0)
-            
         else:
 
-            self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
-            
-            self.root.attributes('-fullscreen', True)
-
+            self.root.geometry(f"{self.width}x{self.height}")
+        
             self.panel_canvas = tk.Canvas(self.root,
                                           width=self.panel_width,
                                           height=self.screen_height,
@@ -624,6 +600,7 @@ class PigeonPainter:
             self.panel_canvas.delete(it)
         self.panel_choice_items = []
         self.choices_open = False
+        self.start_cooldown()
         #print("[DEBUG] panel choices cleared => user can paint if T,S,C chosen")
 
     def handle_panel_choice(self, choice_label, x, y, choice_loc):
