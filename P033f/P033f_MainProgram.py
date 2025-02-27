@@ -107,9 +107,11 @@ class PigeonPainter:
         self.panel_width = 300
 
         # Full screen
-        self.screen_width = self.root.winfo_screenwidth()
-        self.screen_height = self.root.winfo_screenheight()
-        self.root.geometry(f"{self.screen_width}x{self.screen_height}+0+0")
+        # self.screen_width = self.root.winfo_screenwidth()
+        # self.screen_height = self.root.winfo_screenheight()
+        self.screen_width = 1024 
+        self.screen_height = 768
+        # self.root.geometry(f"{self.screen_width}x{self.screen_height}+0+0")
 
         # The original offset for T,S,C
         self.vertical_offset = 30
@@ -152,17 +154,46 @@ class PigeonPainter:
             print(f"[DEBUG] Could not load T/S/C images: {e}")
 
         # Panel canvas for T/S/C
-        self.panel_canvas = tk.Canvas(self.root, width=self.panel_width, height=self.screen_height,
-                                      bg="white", highlightthickness=0)
-        self.panel_canvas.place(x=0, y=0)
-        #print("[DEBUG] panel_canvas placed at x=0,y=0")
-
-        # Paint canvas for shape creation
-        self.paint_width = self.screen_width - self.panel_width
-        self.paint_height = self.screen_height
-        self.paint_canvas = tk.Canvas(self.root, width=self.paint_width, height=self.paint_height,
-                                      highlightthickness=0, bg="white")
-        self.paint_canvas.place(x=self.panel_width, y=0)
+        self.width, self.height = 1024, 768
+        if operant_box_version:
+            self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
+            self.root.attributes('-fullscreen',
+                                 True)
+            
+            self.panel_canvas = tk.Canvas(self.root,
+                                          width=self.panel_width,
+                                          height=self.screen_height,
+                                          bg="white", highlightthickness=0)
+            self.panel_canvas.place(x=0, y=0)
+            
+            self.paint_width = self.screen_width - self.panel_width
+            self.paint_height = self.screen_height
+            self.paint_canvas = tk.Canvas(self.root,
+                                          width=self.paint_width,
+                                          height=self.paint_height,
+                                          highlightthickness=0,
+                                          bg="white")
+            self.paint_canvas.place(x=self.panel_width, y=0)
+            
+        else:
+            self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
+            self.panel_canvas = tk.Canvas(self.root,
+                                          width=self.panel_width,
+                                          height=self.screen_height,
+                                          bg="white",
+                                          highlightthickness=0)
+            self.panel_canvas.place(x=0, y=0)
+            #print("[DEBUG] panel_canvas placed at x=0,y=0")
+    
+            # Paint canvas for shape creation
+            self.paint_width = self.screen_width - self.panel_width
+            self.paint_height = self.screen_height
+            self.paint_canvas = tk.Canvas(self.root, width=self.paint_width, height=self.paint_height,
+                                          highlightthickness=0, bg="white")
+            self.paint_canvas.place(x=self.panel_width, y=0)
+            
+            
+            
         #print(f"[DEBUG] paint_canvas placed at x={self.panel_width},y=0, size=({self.paint_width}x{self.paint_height})")
 
         # Define vertical spacing for T,S,C in panel_canvas
