@@ -6,6 +6,7 @@ import csv
 from datetime import datetime, date
 from PIL import Image, ImageTk
 from os import path, getcwd, mkdir
+from screeninfo import get_monitors
 
 # With Pillow 11.1, use the new resampling API:
 resample_filter = Image.Resampling.LANCZOS
@@ -156,26 +157,71 @@ class PigeonPainter:
         # Panel canvas for T/S/C
         self.width, self.height = 1024, 768
         if operant_box_version:
-            x_offset = self.root.winfo_screenwidth() + 2000
-            self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
-            self.root.attributes('-fullscreen',
-                                 True)
+            # Detect secondary monitor (right-side monitor should have higher x)
+            monitors = get_monitors()
+            if len(monitors) > 1:
+                primary_monitor = monitors[0]
+                secondary_monitor = monitors[1]  # Assuming right-side is index 1
+                x_offset = secondary_monitor.x  # Use actual right-screen position
+            else:
+                x_offset = self.root.winfo_screenwidth()  # Fallback
             
-            self.panel_canvas = tk.Canvas(self.root,
-                                          width=self.panel_width,
-                                          height=self.screen_height,
-                                          bg="white",
-                                          highlightthickness=0)
-            self.panel_canvas.place(x=self.root.winfo_screenwidth(), y=0)
+            if operant_box_version:
+                self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
+                self.root.attributes('-fullscreen', True)
             
-            self.paint_width = self.screen_width - self.panel_width
-            self.paint_height = self.screen_height
-            self.paint_canvas = tk.Canvas(self.root,
-                                          width=self.paint_width,
-                                          height=self.paint_height,
-                                          highlightthickness=0,
-                                          bg="white")
-            self.paint_canvas.place(x=self.root.winfo_screenwidth() + self.panel_width, y=0)
+                # Define dimensions
+                self.panel_width = 200
+                self.screen_width = self.width  # Assuming fullscreen width
+                self.screen_height = self.height
+            
+                # Panel Canvas on the right screen
+                self.panel_canvas = tk.Canvas(self.root,
+                                              width=self.panel_width,
+                                              height=self.screen_height,
+                                              bg="white",
+                                              highlightthickness=0)
+                self.panel_canvas.place(x=x_offset, y=0)
+            
+                # Paint Canvas next to the panel
+                self.paint_width = self.screen_width - self.panel_width
+                self.paint_height = self.screen_height
+                self.paint_canvas = tk.Canvas(self.root,
+                                              width=self.paint_width,
+                                              height=self.paint_height,
+                                              highlightthickness=0,
+                                              bg="white")
+                self.paint_canvas.place(x=x_offset + self.panel_width, y=0)
+            
+            # # Detect secondary monitor
+            # monitors = get_monitors()
+            # if len(monitors) > 1:
+            #     secondary_monitor = monitors[1]  # Adjust index if needed
+            #     x_offset = secondary_monitor.x
+            # else:
+            #     x_offset = self.root.winfo_screenwidth()  # Fallback
+            
+            
+            # x_offset = self.root.winfo_screenwidth() + 2000
+            # self.root.geometry(f"{self.width}x{self.height}+{x_offset}+0")
+            # self.root.attributes('-fullscreen',
+            #                      True)
+            
+            # self.panel_canvas = tk.Canvas(self.root,
+            #                               width=self.panel_width,
+            #                               height=self.screen_height,
+            #                               bg="white",
+            #                               highlightthickness=0)
+            # self.panel_canvas.place(x=self.root.winfo_screenwidth(), y=0)
+            
+            # self.paint_width = self.screen_width - self.panel_width
+            # self.paint_height = self.screen_height
+            # self.paint_canvas = tk.Canvas(self.root,
+            #                               width=self.paint_width,
+            #                               height=self.paint_height,
+            #                               highlightthickness=0,
+            #                               bg="white")
+            # self.paint_canvas.place(x=self.root.winfo_screenwidth() + self.panel_width, y=0)
             
         else:
             self.root.geometry(f"{self.width}x{self.height}+{self.width}+0")
