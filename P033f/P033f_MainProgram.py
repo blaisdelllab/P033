@@ -20,6 +20,7 @@ class PigeonPainter:
 
         """Revised code with the control panel moved to the bottom.
            The drawing canvas occupies the top portion, and the bottom panel holds the buttons/choices.
+           (The paint canvas is hidden until the first round of choices is complete.)
         """
         if path.expanduser('~').split("/")[2] == "blaisdelllab":
             operant_box_version = True
@@ -152,10 +153,11 @@ class PigeonPainter:
         else:
             self.root.geometry(f"{self.screen_width}x{self.screen_height}")
     
-        # Paint canvas occupies the top area.
+        # Create the paint canvas (drawing area) and hide it initially.
         self.paint_canvas = tk.Canvas(self.root, width=self.paint_width, height=self.paint_height,
                                       bg="white", highlightthickness=0)
         self.paint_canvas.place(x=0, y=0)
+        self.paint_canvas.place_forget()  # Hide at startup
         if self.bricks_img:
             self.paint_canvas_bg = self.paint_canvas.create_image(0, 0, anchor="nw", image=self.bricks_img)
             if not hasattr(self.paint_canvas, 'images'):
@@ -178,9 +180,7 @@ class PigeonPainter:
         self.panel_canvas.bind("<Button-1>", self.panel_on_click)
         self.paint_canvas.bind("<Button-1>", self.paint_on_click)
     
-    # -----------------------------------------------------------
-    # Logging and Saving (unchanged except on_close)
-    # -----------------------------------------------------------
+    # --------------------------- Logging and Saving ---------------------------
     def log_event(self, event_label, x=None, y=None, choice_location=None):
         current_time = time.time()
         session_time = current_time - self.start_time
@@ -248,9 +248,7 @@ class PigeonPainter:
         if self.n_shapes % 15 == 0:
             self.save_paint_canvas_all()
     
-    # -----------------------------------------------------------
-    # MAIN BUTTONS in bottom panel (scaled by panel_scale)
-    # -----------------------------------------------------------
+    # --------------------------- Main Buttons in Bottom Panel ---------------------------
     def create_T_button(self):
         scale = self.panel_scale
         cx, cy = self.T_center
@@ -324,9 +322,7 @@ class PigeonPainter:
         self.panel_canvas.delete("C_button")
         self.panel_canvas.delete("C_invisible")
     
-    # -----------------------------------------------------------
-    # Panel On-Click in bottom panel
-    # -----------------------------------------------------------
+    # --------------------------- Panel On-Click in Bottom Panel ---------------------------
     def panel_on_click(self, event):
         x, y = event.x, event.y
         if self.cooldown:
@@ -384,12 +380,9 @@ class PigeonPainter:
         if not found_something:
             self.log_event("panel_background_peck", x, y, choice_location="NA")
     
-    # -----------------------------------------------------------
-    # Paint On-Click (drawing is now always allowed, even when choices are open)
-    # -----------------------------------------------------------
+    # --------------------------- Paint On-Click (drawing is now always allowed) ---------------------------
     def paint_on_click(self, event):
         x, y = event.x, event.y
-        # Removed the check for self.choices_open to allow drawing regardless.
         if not self.canvas_active:
             self.log_event("canvas_inactive_peck", x, y, choice_location="NA")
             return
@@ -419,11 +412,9 @@ class PigeonPainter:
                 self.show_all_three_buttons()
                 self.first_round_done = True
     
-    # -----------------------------------------------------------
-    # Show Choices on the Panel (updated for bottom layout and scaled by panel_scale)
-    # -----------------------------------------------------------
+    # --------------------------- Show Choices on the Panel ---------------------------
     def show_thickness_choices(self):
-        scale = self.panel_scale
+        # Three choices: "thin", "middle", "thick"
         self.choices_open = True
         for it in self.panel_choice_items:
             self.panel_canvas.delete(it)
@@ -434,49 +425,50 @@ class PigeonPainter:
         coords = [self.T_center, self.S_center, self.C_center]
         loc_tags = ["top_choice", "middle_choice", "bottom_choice"]
         for ((lbl, _), (cx, cy), loc_tag) in zip(thick_list, coords, loc_tags):
-            invis_r = int(52 * scale * 1.5)
-            invis_id = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r, cx + invis_r, cy + invis_r,
+            invis_r = int(52 * self.panel_scale * 1.5)
+            id_invis = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r, cx + invis_r, cy + invis_r,
                                                      fill="", outline="", width=0,
                                                      tags=("panel_choice", lbl, "rf_invisible", loc_tag))
-            self.panel_choice_items.append(invis_id)
+            self.panel_choice_items.append(id_invis)
             if self.selected_shape is not None:
                 candidate_thickness = {"thin": 2, "middle": 5, "thick": 8}[lbl]
                 preview_color = self.selected_color if self.selected_color is not None else "black"
                 if self.selected_shape == "circle":
-                    r = int(30 * scale)
-                    preview_id = self.panel_canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
+                    r_preview = int(30 * self.panel_scale)
+                    id_preview = self.panel_canvas.create_oval(cx - r_preview, cy - r_preview, cx + r_preview, cy + r_preview,
                                                                outline=preview_color, fill="",
                                                                width=candidate_thickness,
                                                                tags=("panel_choice", lbl, loc_tag))
                 elif self.selected_shape == "triangle":
-                    pts = [cx, cy - int(30*scale), cx - int(26*scale), cy + int(22*scale), cx + int(26*scale), cy + int(22*scale)]
-                    preview_id = self.panel_canvas.create_polygon(pts,
+                    pts = [cx, cy - int(30*self.panel_scale), cx - int(26*self.panel_scale), cy + int(22*self.panel_scale), cx + int(26*self.panel_scale), cy + int(22*self.panel_scale)]
+                    id_preview = self.panel_canvas.create_polygon(pts,
                                                                     outline=preview_color, fill="",
                                                                     width=candidate_thickness,
                                                                     tags=("panel_choice", lbl, loc_tag))
                 elif self.selected_shape == "square":
-                    half = int(30 * scale)
-                    preview_id = self.panel_canvas.create_rectangle(cx - half, cy - half, cx + half, cy + half,
+                    half = int(30 * self.panel_scale)
+                    id_preview = self.panel_canvas.create_rectangle(cx - half, cy - half, cx + half, cy + half,
                                                                       outline=preview_color, fill="",
                                                                       width=candidate_thickness,
                                                                       tags=("panel_choice", lbl, loc_tag))
-                self.panel_choice_items.append(preview_id)
+                self.panel_choice_items.append(id_preview)
             else:
-                circ_r = int(45 * scale)
-                circ_id = self.panel_canvas.create_oval(cx - circ_r, cy - circ_r,
-                                                        cx + circ_r, cy + circ_r,
-                                                        outline="black", fill="", width=2,
-                                                        tags=("panel_choice", lbl, loc_tag))
-                self.panel_choice_items.append(circ_id)
+                r_preview = int(45 * self.panel_scale)
+                id_preview = self.panel_canvas.create_oval(cx - r_preview, cy - r_preview,
+                                                           cx + r_preview, cy + r_preview,
+                                                           outline="black", fill="",
+                                                           width=2,
+                                                           tags=("panel_choice", lbl, loc_tag))
+                self.panel_choice_items.append(id_preview)
                 thickness_map = {"thin": 2, "middle": 5, "thick": 8}
                 lw = thickness_map[lbl]
-                line_id = self.panel_canvas.create_line(cx - int(30*scale), cy, cx + int(30*scale), cy,
+                line_id = self.panel_canvas.create_line(cx - int(30*self.panel_scale), cy, cx + int(30*self.panel_scale), cy,
                                                         width=lw, fill='black',
                                                         tags=("panel_choice", lbl, loc_tag))
                 self.panel_choice_items.append(line_id)
     
     def show_shape_choices(self):
-        scale = self.panel_scale
+        # Three choices: "triangle", "circle", "square"
         self.choices_open = True
         for it in self.panel_choice_items:
             self.panel_canvas.delete(it)
@@ -487,57 +479,57 @@ class PigeonPainter:
         coords = [self.T_center, self.S_center, self.C_center]
         loc_tags = ["top_choice", "middle_choice", "bottom_choice"]
         for ((lbl, _), (cx, cy), loc_tag) in zip(shape_list, coords, loc_tags):
-            invis_r = int(52 * scale)
-            invis_id = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r, cx + invis_r, cy + invis_r,
+            invis_r = int(52 * self.panel_scale)
+            id_invis = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r, cx + invis_r, cy + invis_r,
                                                      fill="", outline="", width=0,
                                                      tags=("panel_choice", lbl, "rf_invisible", loc_tag))
-            self.panel_choice_items.append(invis_id)
+            self.panel_choice_items.append(id_invis)
             if self.selected_thickness is not None:
                 candidate_thickness = {"thin": 2, "middle": 5, "thick": 8}[self.selected_thickness]
                 lw = candidate_thickness
                 preview_color = self.selected_color if self.selected_color is not None else "black"
                 if lbl == "triangle":
-                    pts = [cx, cy - int(45*scale), cx - int(39*scale), cy + int(33*scale), cx + int(39*scale), cy + int(33*scale)]
-                    preview_id = self.panel_canvas.create_polygon(pts,
+                    pts = [cx, cy - int(45*self.panel_scale), cx - int(39*self.panel_scale), cy + int(33*self.panel_scale), cx + int(39*self.panel_scale), cy + int(33*self.panel_scale)]
+                    id_preview = self.panel_canvas.create_polygon(pts,
                                                                     outline=preview_color, fill="",
-                                                                    width=lw,
+                                                                    width=candidate_thickness,
                                                                     tags=("panel_choice", lbl, loc_tag))
                 elif lbl == "circle":
-                    preview_id = self.panel_canvas.create_oval(cx - int(45*scale), cy - int(45*scale),
-                                                               cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_oval(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                               cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                outline=preview_color, fill="",
-                                                               width=lw,
+                                                               width=candidate_thickness,
                                                                tags=("panel_choice", lbl, loc_tag))
                 elif lbl == "square":
-                    preview_id = self.panel_canvas.create_rectangle(cx - int(45*scale), cy - int(45*scale),
-                                                                    cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_rectangle(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                                    cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                     outline=preview_color, fill="",
-                                                                    width=lw,
+                                                                    width=candidate_thickness,
                                                                     tags=("panel_choice", lbl, loc_tag))
-                self.panel_choice_items.append(preview_id)
+                self.panel_choice_items.append(id_preview)
             else:
                 if lbl == "triangle":
-                    pts = [cx, cy - int(45*scale), cx - int(39*scale), cy + int(33*scale), cx + int(39*scale), cy + int(33*scale)]
-                    preview_id = self.panel_canvas.create_polygon(pts,
+                    pts = [cx, cy - int(45*self.panel_scale), cx - int(39*self.panel_scale), cy + int(33*self.panel_scale), cx + int(39*self.panel_scale), cy + int(33*self.panel_scale)]
+                    id_preview = self.panel_canvas.create_polygon(pts,
                                                                     outline="black", fill="",
                                                                     width=2,
                                                                     tags=("panel_choice", lbl, loc_tag))
                 elif lbl == "circle":
-                    preview_id = self.panel_canvas.create_oval(cx - int(45*scale), cy - int(45*scale),
-                                                               cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_oval(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                               cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                outline="black", fill="",
                                                                width=2,
                                                                tags=("panel_choice", lbl, loc_tag))
                 elif lbl == "square":
-                    preview_id = self.panel_canvas.create_rectangle(cx - int(45*scale), cy - int(45*scale),
-                                                                    cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_rectangle(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                                    cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                     outline="black", fill="",
                                                                     width=2,
                                                                     tags=("panel_choice", lbl, loc_tag))
-                self.panel_choice_items.append(preview_id)
+                self.panel_choice_items.append(id_preview)
     
     def show_color_choices(self):
-        scale = self.panel_scale
+        # Three choices: "lime", "cyan", "magenta"
         self.choices_open = True
         for it in self.panel_choice_items:
             self.panel_canvas.delete(it)
@@ -548,37 +540,36 @@ class PigeonPainter:
         coords = [self.T_center, self.S_center, self.C_center]
         loc_tags = ["top_choice", "middle_choice", "bottom_choice"]
         for ((lbl, _), (cx, cy), loc_tag) in zip(color_list, coords, loc_tags):
-            invis_r = int(52 * scale)
-            invis_id = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r,
-                                                     cx + invis_r, cy + invis_r,
+            invis_r = int(52 * self.panel_scale)
+            id_invis = self.panel_canvas.create_oval(cx - invis_r, cy - invis_r, cx + invis_r, cy + invis_r,
                                                      fill="", outline="", width=0,
                                                      tags=("panel_choice", lbl, "rf_invisible", loc_tag))
-            self.panel_choice_items.append(invis_id)
+            self.panel_choice_items.append(id_invis)
             if self.selected_thickness is not None and self.selected_shape is not None:
                 candidate_thickness = {"thin": 2, "middle": 5, "thick": 8}[self.selected_thickness]
                 lw = candidate_thickness
                 if self.selected_shape == "circle":
-                    preview_id = self.panel_canvas.create_oval(cx - int(45*scale), cy - int(45*scale),
-                                                               cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_oval(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                               cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                outline=lbl, fill="",
                                                                width=lw,
                                                                tags=("panel_choice", lbl, loc_tag))
                 elif self.selected_shape == "triangle":
-                    pts = [cx, cy - int(45*scale), cx - int(39*scale), cy + int(33*scale), cx + int(39*scale), cy + int(33*scale)]
-                    preview_id = self.panel_canvas.create_polygon(pts,
+                    pts = [cx, cy - int(45*self.panel_scale), cx - int(39*self.panel_scale), cy + int(33*self.panel_scale), cx + int(39*self.panel_scale), cy + int(33*self.panel_scale)]
+                    id_preview = self.panel_canvas.create_polygon(pts,
                                                                     outline=lbl, fill="",
                                                                     width=lw,
                                                                     tags=("panel_choice", lbl, loc_tag))
                 elif self.selected_shape == "square":
-                    preview_id = self.panel_canvas.create_rectangle(cx - int(45*scale), cy - int(45*scale),
-                                                                    cx + int(45*scale), cy + int(45*scale),
+                    id_preview = self.panel_canvas.create_rectangle(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                                    cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                                     outline=lbl, fill="",
                                                                     width=lw,
                                                                     tags=("panel_choice", lbl, loc_tag))
-                self.panel_choice_items.append(preview_id)
+                self.panel_choice_items.append(id_preview)
             else:
-                circ_id = self.panel_canvas.create_oval(cx - int(45*scale), cy - int(45*scale),
-                                                        cx + int(45*scale), cy + int(45*scale),
+                circ_id = self.panel_canvas.create_oval(cx - int(45*self.panel_scale), cy - int(45*self.panel_scale),
+                                                        cx + int(45*self.panel_scale), cy + int(45*self.panel_scale),
                                                         outline="black", fill=lbl, width=2,
                                                         tags=("panel_choice", lbl, loc_tag))
                 self.panel_choice_items.append(circ_id)
@@ -617,26 +608,31 @@ class PigeonPainter:
                     "red": "red_choice", "blue": "blue_choice", "green": "green_choice"}
             self.log_event(emap[choice_label], x, y, choice_location=choice_loc)
             self.clear_panel_choices()
+            # Only reveal the paint canvas during the first round
             if self.selected_thickness and self.selected_shape and self.selected_color:
-                self.show_bricks_background()
-                if not self.first_sample_shown:
-                    self.create_sample_shape()
-                    self.first_sample_shown = True
+                if not self.bricks_shown:
+                    self.show_bricks_background()
+                    if not self.first_sample_shown:
+                        self.create_sample_shape()
+                        self.first_sample_shown = True
                 self.canvas_active = True
                 if self.first_round_done:
                     self.show_all_three_buttons()
     
+    # --------------------------- Reveal Paint Canvas and Show Background ---------------------------
     def show_bricks_background(self):
-        if not self.bricks_shown:
-            if self.bricks_img:
-                self.paint_canvas_bg = self.paint_canvas.create_image(0, 0, anchor="nw", image=self.bricks_img)
-                if not hasattr(self.paint_canvas, 'images'):
-                    self.paint_canvas.images = []
-                self.paint_canvas.images.append(self.bricks_img)
-            else:
-                self.paint_canvas.configure(bg="white")
-            self.bricks_shown = True
+        # Reveal the paint (drawing) canvas (only once)
+        self.paint_canvas.place(x=0, y=0)
+        if self.bricks_img:
+            self.paint_canvas_bg = self.paint_canvas.create_image(0, 0, anchor="nw", image=self.bricks_img)
+            if not hasattr(self.paint_canvas, 'images'):
+                self.paint_canvas.images = []
+            self.paint_canvas.images.append(self.bricks_img)
+        else:
+            self.paint_canvas.configure(bg="white")
+        self.bricks_shown = True
     
+    # --------------------------- Shape Creation ---------------------------
     def create_circle_2peck(self, x1, y1, x2, y2):
         color = self.selected_color or "black"
         lw = self.get_line_width()
