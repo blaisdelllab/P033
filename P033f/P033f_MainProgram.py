@@ -285,6 +285,27 @@ class PigeonPainter:
             print(f"[DEBUG] error saving data => {e}")
     
     # -----------------------------------------------------------
+    #  Multi-saving of the paint canvas
+    #  Every 15 shapes
+    # -----------------------------------------------------------
+    def save_paint_canvas_all(self):
+        timestamp = datetime.now().strftime("%m-%d-%Y_Time-%H-%M-%S")
+        base_filename = f"{self.save_directory}/{self.subject}_{timestamp}_P033f_three-choice-brick"
+        eps_filename = base_filename + ".eps"
+        
+        try:
+            print("[DEBUG] Generating EPS from paint_canvas.")
+            self.paint_canvas.postscript(file=eps_filename, colormode='color')
+            print(f"[DEBUG] Paint canvas saved as EPS => {eps_filename}")
+        except Exception as e:
+            print(f"[DEBUG] Error saving paint canvas in EPS => {e}")
+    
+    # Call this after every shape creation to check whether to save the canvas
+    def check_auto_save(self):
+        if self.n_shapes % 15 == 0:
+            self.save_paint_canvas_all()
+    
+    # -----------------------------------------------------------
     #  MAIN BUTTONS T, S, C on the panel
     # -----------------------------------------------------------
     def create_T_button(self):
@@ -702,6 +723,7 @@ class PigeonPainter:
             self.paint_canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
                                           outline=color, fill="", width=lw)
         self.n_shapes += 1
+        self.check_auto_save()
     
     def create_equilateral_2peck(self, x1, y1, x2, y2):
         color = self.selected_color or "black"
@@ -725,6 +747,7 @@ class PigeonPainter:
             self.paint_canvas.create_polygon(x1, y1, xp, yp, xm, ym,
                                              outline=color, fill="", width=lw)
         self.n_shapes += 1
+        self.check_auto_save()
     
     def create_square_2peck(self, topmidx, topmidy, botmidx, botmidy):
         color = self.selected_color or "black"
@@ -759,6 +782,7 @@ class PigeonPainter:
                 outline=color, fill="", width=lw
             )
         self.n_shapes += 1
+        self.check_auto_save()
     
     def get_line_width(self):
         thickness_map = {"thin": 2, "middle": 5, "thick": 8}
@@ -814,7 +838,7 @@ class PigeonPainter:
             Bpy = centroid_y + (by - centroid_y) * factor
             Cpx = centroid_x + (cx_ - centroid_x) * factor
             Cpy = centroid_y + (cy_ - centroid_y) * factor
-            self.paint_canvas.create_polygon(Apx, Apy, Bpx, Bpy, Cpx, CPy,
+            self.paint_canvas.create_polygon(Apx, Apy, Bpx, Bpy, Cpx, Cpy,
                                              outline="", fill=col)
     
     def create_sample_shape(self):
@@ -854,22 +878,14 @@ class PigeonPainter:
         print("[DEBUG] on_close => saving data & canvas, then exiting.")
         try:
             self.save_data()
-            self.save_paint_canvas_eps()
+            if self.n_shapes > 0:
+                self.save_paint_canvas_all()
         except Exception as e:
             print(f"[DEBUG] error in on_close => {e}")
         finally:
             self.panel_canvas.destroy()
             self.paint_canvas.destroy()
             self.root.after(1, self.root.destroy())
-    
-    def save_paint_canvas_eps(self):
-        file_eps = f"{self.save_directory}/{self.subject}_{datetime.now().strftime('%m-%d-%Y_Time-%H-%M-%S')}_P033f_three-choice-brick.eps"
-        try:
-            print("[DEBUG] generating EPS from paint_canvas only.")
-            self.paint_canvas.postscript(file=file_eps, colormode='color')
-            print(f"[DEBUG] paint_canvas saved to => {file_eps}")
-        except Exception as e:
-            print(f"[DEBUG] error saving paint canvas => {e}")
     
     @staticmethod
     def main():
