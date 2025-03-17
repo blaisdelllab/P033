@@ -1,3 +1,11 @@
+# P033f Three-Choice Task
+# Include brief description...
+
+# Authors: Cameron G. & Cyrus K.
+
+# Last modified: 2025-03-17
+
+# Import libraries
 import tkinter as tk
 import random
 import time
@@ -5,8 +13,68 @@ import math
 import csv
 from datetime import datetime, date
 from PIL import Image, ImageTk
-from os import path, getcwd, mkdir
+from os import path, getcwd, mkdir, popen
 from screeninfo import get_monitors
+
+# The first variable declared is whether the program is the operant box version
+# for pigeons, or the test version for humans to view. The variable below is 
+# a T/F boolean that will be referenced many times throughout the program 
+# when the two options differ (for example, when the Hopper is accessed or
+# for onscreen text, etc.). It is changed automatically based on whether
+# the program is running in operant boxes (True) or not (False). It is
+# automatically set to True if the user is "blaisdelllab" (e.g., running
+# on a rapberry pi) or False if not. The output of os_path.expanduser('~')
+# should be "/home/blaisdelllab" on the RPis
+
+if path.expanduser('~').split("/")[2] =="blaisdelllab":
+    operant_box_version = True
+    print("*** Running operant box version *** \n")
+else:
+    operant_box_version = False
+    print("*** Running test version (no hardware) *** \n")
+
+# Import hopper/other specific libraries from files on operant box computers
+try:
+    if operant_box_version:
+        # Import additional libraries...
+        import pigpio # import pi, OUTPUT
+        
+        # Setup GPIO numbers (NOT PINS; gpio only compatible with GPIO num)
+        servo_GPIO_num = 2
+        hopper_light_GPIO_num = 13
+        house_light_GPIO_num = 21
+        
+        # Setup use of pi()
+        rpi_board = pigpio.pi()
+        
+        # Then set each pin to output 
+        rpi_board.set_mode(servo_GPIO_num,
+                           pigpio.OUTPUT) # Servo motor...
+        rpi_board.set_mode(hopper_light_GPIO_num,
+                           pigpio.OUTPUT) # Hopper light LED...
+        rpi_board.set_mode(house_light_GPIO_num,
+                           pigpio.OUTPUT) # House light LED...
+        
+        # Setup the servo motor 
+        rpi_board.set_PWM_frequency(servo_GPIO_num,
+                                    50) # Default frequency is 50 MhZ
+        
+        # Next grab the up/down 
+        hopper_vals_csv_path = str(path.expanduser('~')+"/Desktop/Box_Info/Hopper_vals.csv")
+        
+        # Store the proper UP/DOWN values for the hopper from csv file
+        up_down_table = list(csv.reader(open(hopper_vals_csv_path)))
+        hopper_up_val = up_down_table[1][0]
+        hopper_down_val = up_down_table[1][1]
+        
+        # Lastly, run the shell script that maps the touchscreen to operant box monitor
+        popen("sh /home/blaisdelllab/Desktop/Hardware_Code/map_touchscreen.sh")
+                             
+        
+except ModuleNotFoundError:
+    input("ERROR: Cannot find hopper hardware! Check desktop.")
+
+
 
 # With Pillow 11.1, use the new resampling API:
 resample_filter = Image.Resampling.LANCZOS
@@ -87,7 +155,7 @@ class PigeonPainter:
         self.first_round_done = False
         self.first_sample_shown = False
     
-        self.SURPRISE_PROB = 0.05
+        self.SURPRISE_PROB = 0.01 
         self.cooldown = False
     
         self.NDots = 0
@@ -179,6 +247,24 @@ class PigeonPainter:
     
         self.panel_canvas.bind("<Button-1>", self.panel_on_click)
         self.paint_canvas.bind("<Button-1>", self.paint_on_click)
+        
+        # Reinforcement info
+        self.timed_reinforcement_interval = 5 * 60 * 1000 # 5 min in milliseconds
+        self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
+                                                    lambda: self.start_reinforcement("timed_reinforcement"))
+        
+        self.hopper_time = 4 * 1000 # 4s
+        
+        
+        self.polygon_VR = 15
+        self.polygon_VR_range = 5
+        self.crit_num_shapes = random.choice(list(range(self.polygon_VR - self.polygon_VR_range, 
+                                                        self.polygon_VR + self.polygon_VR_range)))
+        
+        # Turn on houseline (if operant box version)
+        if operant_box_version:
+            rpi_board.write(house_light_GPIO_num, 
+                            True) # Turn on house light
     
     # --------------------------- Logging and Saving ---------------------------
     def log_event(self, event_label, x=None, y=None, choice_location=None):
@@ -207,13 +293,23 @@ class PigeonPainter:
             "BoxNumber": self.box_number,
             "Subject": self.subject,
             "Date": str(self.date_str),
-            "SurpriseProb": self.SURPRISE_PROB
+            "SurpriseProb": self.SURPRISE_PROB,
+            "PolygonVR": self.polygon_VR
+            
         }
         self.data_log.append(row)
         self.prev_event_time = current_time
         if x is not None and y is not None:
             self.prev_x = x
             self.prev_y = y
+        
+        # Check if response should be reinforced
+        if  self.n_shapes ==  self.crit_num_shapes:
+            print(self.n_shapes)
+            self.crit_num_shapes += random.choice(list(range(self.polygon_VR - self.polygon_VR_range,
+                                                             self.polygon_VR + self.polygon_VR_range)))
+            print(self.crit_num_shapes)
+            self.start_reinforcement("instrumental_reinforcement")
     
     def save_data(self):
         fieldnames = [
@@ -221,7 +317,7 @@ class PigeonPainter:
             "ChoiceLocation",
             "NDots", "NChoice", "NShapes", "Shape", "Thickness", "Color",
             "StartTime", "Experiment", "BoxNumber", "Subject", "Date",
-            "SurpriseProb"
+            "SurpriseProb", "PolygonVR"
         ]
         filename = f"{self.data_folder_directory}/{self.subject}/P033f_3choice_pigeon_painter_data_{self.subject}_{self.session_start_datetime.strftime('%Y%m%d_%H%M%S')}.csv"
         try:
@@ -813,6 +909,39 @@ class PigeonPainter:
             self.panel_canvas.destroy()
             self.paint_canvas.destroy()
             self.root.after(1, self.root.destroy())
+            
+    def start_reinforcement(self, type_of_reinforcment):
+        print(f"** {type_of_reinforcment} started **")
+        self.log_event(type_of_reinforcment) # Save data event
+        # Cancel auto timer
+        try:
+            self.root.after_cancel(self.timed_reinforcement_timer)
+        except AttributeError:
+            pass
+        # Next send output to the box's hardware
+        if operant_box_version:
+            rpi_board.write(house_light_GPIO_num,
+                            False) # Turn off the house light
+            rpi_board.write(hopper_light_GPIO_num,
+                            True) # Turn off the house light
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num,
+                                           hopper_up_val) # Move hopper to up position
+        # Set a timer to raise hopper
+        self.root.after(self.hopper_time,
+                        lambda: self.end_reinforcement())
+    
+    def end_reinforcement(self):
+        print("** Reinforcement ended **")
+        if operant_box_version:
+            rpi_board.write(hopper_light_GPIO_num,
+                            False) # Turn off the hopper light
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num,
+                                           hopper_down_val) # Hopper down
+            rpi_board.write(house_light_GPIO_num, 
+                            True) # Turn on house light
+        # Create a new timer
+        self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
+                                                    lambda: self.start_reinforcement("timed_reinforcement"))
     
     @staticmethod
     def main():
