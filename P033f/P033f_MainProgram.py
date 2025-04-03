@@ -249,14 +249,14 @@ class PigeonPainter:
         self.paint_canvas.bind("<Button-1>", self.paint_on_click)
         
         # Reinforcement info
-        self.timed_reinforcement_interval = 5 * 60 * 1000 # 5 min in milliseconds
+        self.timed_reinforcement_interval = 10 * 60 * 1000 # 10 min in milliseconds
         self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
                                                     lambda: self.start_reinforcement("timed_reinforcement"))
         
         self.hopper_time = 4 * 1000 # 4s
         
         
-        self.polygon_VR = 15
+        self.polygon_VR = 30
         self.polygon_VR_range = 5
         self.crit_num_shapes = random.choice(list(range(self.polygon_VR - self.polygon_VR_range, 
                                                         self.polygon_VR + self.polygon_VR_range)))
