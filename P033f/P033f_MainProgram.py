@@ -249,14 +249,14 @@ class PigeonPainter:
         self.paint_canvas.bind("<Button-1>", self.paint_on_click)
         
         # Reinforcement info
-        self.timed_reinforcement_interval = 10 * 60 * 1000 # 10 min in milliseconds
+        self.timed_reinforcement_interval = 15 * 60 * 1000 # 15 min in milliseconds
         self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
                                                     lambda: self.start_reinforcement("timed_reinforcement"))
         
         self.hopper_time = 4 * 1000 # 4s
         
         
-        self.polygon_VR = 30
+        self.polygon_VR = 50
         self.polygon_VR_range = 5
         self.crit_num_shapes = random.choice(list(range(self.polygon_VR - self.polygon_VR_range, 
                                                         self.polygon_VR + self.polygon_VR_range)))
@@ -341,7 +341,7 @@ class PigeonPainter:
             print(f"[DEBUG] Error saving paint canvas in EPS => {e}")
     
     def check_auto_save(self):
-        if self.n_shapes % 15 == 0:
+        if self.n_shapes % 30 == 0:
             self.save_paint_canvas_all()
     
     # --------------------------- Main Buttons in Bottom Panel ---------------------------
