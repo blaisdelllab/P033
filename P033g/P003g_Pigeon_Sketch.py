@@ -29,7 +29,7 @@ except ImportError:
     pass
 
 import os as os_mod
-from os import path, mkdir, getcwd, popen   # popen imported from os
+from os import path, mkdir, getcwd, popen  # popen imported from os
 
 ############################
 #  OPERANT BOX DETECTION   #
@@ -274,6 +274,7 @@ class MainScreen:
         self.phase_key = self.parse_phase_key(exp_phase)
         self.phase_config = PHASE_CONFIG.get(self.phase_key, None)
 
+        # Do not override operant_box_version – use the global variable
         self.box_number = "NA"
 
         self.max_trials = 90
@@ -298,8 +299,30 @@ class MainScreen:
         self.root.geometry(f"{self.screen_width}x{self.screen_height}")
         self.root.bind("<Escape>", self.exit_program)
 
-        self.canvas = Canvas(self.root, width=self.screen_width, height=self.screen_height)
-        self.canvas.pack(fill=BOTH, expand=True)
+        # -------------------------------------------
+        # Hardware display integration:
+        # If running in operant box mode, then we
+        # key-bind the "c" key to toggle the cursor,
+        # set fullscreen with specified geometry,
+        # and use a master canvas.
+        self.mainscreen_width = self.screen_width
+        self.mainscreen_height = self.screen_height
+        if operant_box_version:
+            self.cursor_visible = True
+            self.change_cursor_state()  # turn off cursor immediately
+            self.root.bind("<c>", lambda event: self.change_cursor_state())
+            self.root.geometry(f"{self.mainscreen_width}x{self.mainscreen_height}+1920+0")
+            self.root.attributes('-fullscreen', True)
+            self.mastercanvas = Canvas(self.root, bg="black")
+            self.mastercanvas.pack(fill=BOTH, expand=True)
+            self.canvas = self.mastercanvas
+        else:
+            self.mastercanvas = Canvas(self.root, bg="black",
+                                       height=self.mainscreen_height,
+                                       width=self.mainscreen_width)
+            self.mastercanvas.pack()
+            self.canvas = self.mastercanvas
+        # -------------------------------------------
 
         # Updated header with "Phase" column before "Region"
         header = [
@@ -350,13 +373,23 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
 
-        # Turn on house light if operant box version.
         if self.phase_key == "GridDisplay":
             self.show_grid_display()
         else:
             self.next_trial(new_trial=True)
 
         self.root.mainloop()
+
+    def change_cursor_state(self):
+        # Toggle cursor visible/off
+        if self.cursor_visible:
+            self.root.config(cursor="none")
+            print("### Cursor turned off ###")
+            self.cursor_visible = False
+        else:
+            self.root.config(cursor="")
+            print("### Cursor turned on ###")
+            self.cursor_visible = True
 
     ########## PHASE PARSER
     def parse_phase_key(self, title):
@@ -493,7 +526,7 @@ class MainScreen:
         self.canvas.delete("all")
         if not self.phase_config or self.phase_key == "GridDisplay":
             return
-        # Before each trial, ensure the house light is turned ON
+        # Before each trial, ensure the house light is turned ON.
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
         self.current_phase_side = "sample"
@@ -845,6 +878,7 @@ class MainScreen:
     def blackout_then_repeat(self):
         self.canvas.delete("all")
         self.canvas.config(bg="black")
+        rpi_board.write(house_light_GPIO_num, False)       # Turn house light off
         if not operant_box_version:
             self.canvas.create_text(self.screen_width/2, self.screen_height/2,
                                     text="Time Out", fill="white", font=("Helvetica", 32))
@@ -866,6 +900,7 @@ class MainScreen:
     def finish_ITI(self, was_incorrect):
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
+        rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
         if was_incorrect:
             self.next_trial(new_trial=False)
         else:
@@ -897,7 +932,6 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, False)   # Turn off hopper light
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Lower hopper
-            rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
         self.start_ITI(incorrect=False)
 
     ########## EXIT
@@ -981,10 +1015,8 @@ try:
         cp = ExperimenterControlPanel()
         
 except:
-    # If an unexpected error, make sure to clean up the GPIO board
+    # If an unexpected error occurs, ensure proper cleanup of the GPIO board (if applicable)
     if operant_box_version:
-        rpi_board.set_PWM_dutycycle(servo_GPIO_num,
-                                    False)
-        rpi_board.set_PWM_frequency(servo_GPIO_num,
-                                    False)
+        rpi_board.set_PWM_dutycycle(servo_GPIO_num, False)
+        rpi_board.set_PWM_frequency(servo_GPIO_num, False)
         rpi_board.stop()
