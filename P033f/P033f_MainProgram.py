@@ -256,7 +256,7 @@ class PigeonPainter:
         self.hopper_time = 4 * 1000 # 4s
         
         
-        self.polygon_VR = 50
+        self.polygon_VR = 80
         self.polygon_VR_range = 5
         self.crit_num_shapes = random.choice(list(range(self.polygon_VR - self.polygon_VR_range, 
                                                         self.polygon_VR + self.polygon_VR_range)))
