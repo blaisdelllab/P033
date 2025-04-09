@@ -212,8 +212,8 @@ class ExperimenterControlPanel:
         self.control_window = Tk()
         self.control_window.title("PigeonSketch Control Panel")
 
-        self.pigeon_name_list = ["TEST", "Mario", "Thoth", "Odin", "Itzamna",
-                                  "Vonnegut", "Hawthorne", "Durrell"]
+        self.pigeon_name_list = ["TEST", "Itzamna", "Waluigi", "Evaristo", "Sting",
+                                  "Mario", "Durrell"]
         self.pigeon_name_list.sort()
 
         Label(self.control_window, text="Subject Name:").pack()
