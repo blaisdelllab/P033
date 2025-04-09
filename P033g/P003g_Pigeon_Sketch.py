@@ -953,6 +953,8 @@ class MainScreen:
 
     ########## EXIT
     def exit_program(self, event=None):
+        rpi_board.write(house_light_GPIO_num, False)   # Turn off house light
+        rpi_board.write(hopper_light_GPIO_num, False)  # Turn off hopper light
         if self.record_data:
             self.write_data("NA", "NA", "SessionEnds", "NA", 0)
             # Save the data file in the subject's folder within the data folder directory
