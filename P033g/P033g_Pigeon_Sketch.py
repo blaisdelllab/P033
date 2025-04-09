@@ -286,7 +286,7 @@ class MainScreen:
         self.FR_requirement = 4
 
         if operant_box_version:
-            self.ITI_duration = 6000
+            self.ITI_duration = 10000
             self.reinforcement_duration = 3000
         else:
             self.ITI_duration = 1000
