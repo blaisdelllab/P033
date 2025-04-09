@@ -377,7 +377,6 @@ class MainScreen:
         if operant_box_version and self.subject_ID != "TEST":
             print("Delay 30 seconds before starting experiment...")
             self.canvas.delete("all")
-            # Delay further steps; time will be reset after delay.
             self.root.after(30000, self.start_experiment)
         else:
             self.start_experiment()
@@ -385,9 +384,7 @@ class MainScreen:
         self.root.mainloop()
 
     def start_experiment(self):
-        # Reset start_time to begin timing after the delay.
         self.start_time = datetime.now()
-        # Ensure the house light is on at trial start.
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
         if self.phase_key == "GridDisplay":
@@ -396,7 +393,6 @@ class MainScreen:
             self.next_trial(new_trial=True)
 
     def change_cursor_state(self):
-        # Toggle cursor visible/off
         if self.cursor_visible:
             self.root.config(cursor="none")
             print("### Cursor turned off ###")
@@ -449,7 +445,8 @@ class MainScreen:
         num_cols_right = (right_width - circle_spacing) // (non_filled_circle_size + circle_spacing)
         num_rows_right = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
 
-        for row in range(num_rows_left):
+        # --- Remove top row: start at row index 1 instead of 0 ---
+        for row in range(1, num_rows_left):
             for col in range(num_cols_left):
                 x = left_x_start + col * (non_filled_circle_size + circle_spacing)
                 y = left_y_start + row * (non_filled_circle_size + circle_spacing)
@@ -459,7 +456,7 @@ class MainScreen:
                           color="#7f7f7f")
                 self.dot_grid_left.append(dot)
 
-        for row in range(num_rows_right):
+        for row in range(1, num_rows_right):
             for col in range(num_cols_right):
                 x = right_x_start + col * (non_filled_circle_size + circle_spacing)
                 y = right_y_start + row * (non_filled_circle_size + circle_spacing)
@@ -468,7 +465,8 @@ class MainScreen:
                           visible_size=filled_circle_size,
                           color="#7f7f7f")
                 self.dot_grid_right.append(dot)
-
+        # -----------------------------------------------------------
+        
     ########## SHOW GRID DISPLAY
     def show_grid_display(self):
         self.canvas.delete("all")
@@ -541,7 +539,6 @@ class MainScreen:
         self.canvas.delete("all")
         if not self.phase_config or self.phase_key == "GridDisplay":
             return
-        # Before each trial, ensure the house light is turned ON.
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
         self.current_phase_side = "sample"
@@ -558,11 +555,9 @@ class MainScreen:
             self.current_trial_config = {}
             self.right_first_dot = None
             self.dashed_line_ids = []
-
             mode = self.phase_config.get("sample_selection", "single")
             sample_line_pairs = []
             chosen_left = []
-
             if mode == "single":
                 ld = choice(self.dot_grid_left)
                 ld.visible = True
@@ -646,7 +641,6 @@ class MainScreen:
                 ld = choice(self.dot_grid_left)
                 ld.visible = True
                 chosen_left.append(ld)
-
             if self.phase_config.get("sketch_total", None) and sample_line_pairs:
                 target_coords = sample_line_pairs[0]
                 filtered = []
@@ -656,7 +650,6 @@ class MainScreen:
                     else:
                         d.visible = False
                 chosen_left = filtered
-
             self.current_trial_config["sample_dots"] = chosen_left
             if sample_line_pairs:
                 self.current_trial_config["sample_line"] = sample_line_pairs
@@ -683,7 +676,6 @@ class MainScreen:
             for line_id in self.dashed_line_ids:
                 self.canvas.delete(line_id)
             self.dashed_line_ids = []
-
         self.draw_all_dots()
         self.canvas.bind("<Button-1>", self.on_click_sample_side)
 
@@ -823,7 +815,6 @@ class MainScreen:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
             if self.phase_key == "1c2":
-                # For phase 1.c2, only the target dot (matching sample dot) is correct.
                 sample_dot = self.current_trial_config["sample_dots"][0]
                 target_coords = (sample_dot.row, sample_dot.col)
                 if (clicked_dot.row, clicked_dot.col) == target_coords:
@@ -894,7 +885,7 @@ class MainScreen:
         self.canvas.delete("all")
         self.canvas.config(bg="black")
         if operant_box_version:
-            rpi_board.write(house_light_GPIO_num, False)       # Turn house light off
+            rpi_board.write(house_light_GPIO_num, False)
         if not operant_box_version:
             self.canvas.create_text(self.screen_width/2, self.screen_height/2,
                                     text="Time Out", fill="white", font=("Helvetica", 32))
@@ -917,7 +908,7 @@ class MainScreen:
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
         if operant_box_version:
-            rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
+            rpi_board.write(house_light_GPIO_num, True)
         if was_incorrect:
             self.next_trial(new_trial=False)
         else:
@@ -931,11 +922,10 @@ class MainScreen:
         self.write_data(x, y, "ITI_peck", region, IRI)
 
     def provide_reinforcement(self):
-        # Hardware reinforcement actions
         if operant_box_version:
-            rpi_board.write(house_light_GPIO_num, False)   # Turn off house light
-            rpi_board.write(hopper_light_GPIO_num, True)     # Turn on hopper light
-            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_up_val)  # Raise hopper
+            rpi_board.write(house_light_GPIO_num, False)
+            rpi_board.write(hopper_light_GPIO_num, True)
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_up_val)
         self.write_data("NA", "NA", "reinforcer_provided", "NA", 0)
         self.canvas.delete("all")
         self.canvas.config(bg="black")
@@ -945,19 +935,18 @@ class MainScreen:
         self.root.after(self.reinforcement_duration, self.end_reinforcement)
 
     def end_reinforcement(self):
-        # Hardware actions to end reinforcement
         if operant_box_version:
-            rpi_board.write(hopper_light_GPIO_num, False)   # Turn off hopper light
-            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Lower hopper
+            rpi_board.write(hopper_light_GPIO_num, False)
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)
         self.start_ITI(incorrect=False)
 
     ########## EXIT
     def exit_program(self, event=None):
-        rpi_board.write(house_light_GPIO_num, False)   # Turn off house light
-        rpi_board.write(hopper_light_GPIO_num, False)  # Turn off hopper light
+        if operant_box_version:
+            rpi_board.write(house_light_GPIO_num, False)
+            rpi_board.write(hopper_light_GPIO_num, False)
         if self.record_data:
             self.write_data("NA", "NA", "SessionEnds", "NA", 0)
-            # Save the data file in the subject's folder within the data folder directory
             fname = path.join(self.data_folder_directory, self.subject_ID,
                               f"{self.subject_ID}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_{self.experiment_name}_{self.exp_phase_title}.csv")
             with open(fname, 'w', newline='') as f:
@@ -985,7 +974,6 @@ class MainScreen:
         ccoord = curr_dot_coord if curr_dot_coord else "NA"
         pcoord = prev_dot_coord if prev_dot_coord else "NA"
         phase_label = PHASE_LABELS.get(self.phase_key, "NA")
-        # "Line Distance" is always NA for now.
         row = [
             str(self.trial_counter),
             str(self.attempt_counter),
@@ -1000,7 +988,7 @@ class MainScreen:
             str(IRI),
             self.start_time.strftime('%Y-%m-%d_%H.%M.%S'),
             phase_label,
-            "NA",  # Line Distance column set to NA for now.
+            "NA",  # Line Distance (always NA for now)
             region,
             self.experiment_name,
             self.box_number,
@@ -1034,9 +1022,7 @@ class MainScreen:
 try:
     if __name__ == "__main__":
         cp = ExperimenterControlPanel()
-        
 except:
-    # If an unexpected error occurs, ensure proper cleanup of the GPIO board (if applicable)
     if operant_box_version:
         rpi_board.set_PWM_dutycycle(servo_GPIO_num, False)
         rpi_board.set_PWM_frequency(servo_GPIO_num, False)
