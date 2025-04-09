@@ -376,8 +376,6 @@ class MainScreen:
         if operant_box_version and self.subject_ID != "TEST":
             print("Delay 30 seconds before starting experiment...")
             self.canvas.delete("all")
-            self.canvas.create_text(self.screen_width/2, self.screen_height/2,
-                                    text="Waiting 30 seconds...", fill="white", font=("Helvetica", 32))
             # Delay further steps; time will be reset after delay.
             self.root.after(30000, self.start_experiment)
         else:
@@ -950,7 +948,6 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, False)   # Turn off hopper light
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Lower hopper
-            rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
         self.start_ITI(incorrect=False)
 
     ########## EXIT
