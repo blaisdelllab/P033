@@ -274,8 +274,10 @@ class MainScreen:
         self.phase_key = self.parse_phase_key(exp_phase)
         self.phase_config = PHASE_CONFIG.get(self.phase_key, None)
 
-        # Do not override operant_box_version – use the global variable
-        self.box_number = "NA"
+        if operant_box_version:
+            self.box_number = "BOX_1"
+        else:
+            self.box_number = "NA"
 
         self.max_trials = 90
         self.trial_counter = 0
@@ -289,7 +291,8 @@ class MainScreen:
             self.ITI_duration = 1000
             self.reinforcement_duration = 1000
 
-        self.start_time = datetime.now()
+        # Set start_time later after 30-sec delay if needed.
+        self.start_time = None  
         self.previous_peck_time = time()
 
         self.root = Tk()
@@ -324,11 +327,11 @@ class MainScreen:
             self.canvas = self.mastercanvas
         # -------------------------------------------
 
-        # Updated header with "Phase" column before "Region"
+        # Updated header: added "Line Distance" after "Phase"
         header = [
             "TrialNum", "Attempt", "SessionTime", "Xcord", "Ycord", "PrevX", "PrevY",
-            "EventType", "CurrentDotCoord", "PrevDotCoord", "IRI", "StartTime", "Phase", "Region",
-            "Experiment", "BoxNumber", "Subject", "Date"
+            "EventType", "CurrentDotCoord", "PrevDotCoord", "IRI", "StartTime",
+            "Phase", "Line Distance", "Region", "Experiment", "BoxNumber", "Subject", "Date"
         ]
         self.session_data = [header]
 
@@ -369,16 +372,29 @@ class MainScreen:
         except FileExistsError:
             pass
 
-        # Ensure the house light is on for the new trial.
+        # Delay start by 30 seconds if operant box version and subject is not "TEST"
+        if operant_box_version and self.subject_ID != "TEST":
+            print("Delay 30 seconds before starting experiment...")
+            self.canvas.delete("all")
+            self.canvas.create_text(self.screen_width/2, self.screen_height/2,
+                                    text="Waiting 30 seconds...", fill="white", font=("Helvetica", 32))
+            # Delay further steps; time will be reset after delay.
+            self.root.after(30000, self.start_experiment)
+        else:
+            self.start_experiment()
+
+        self.root.mainloop()
+
+    def start_experiment(self):
+        # Reset start_time to begin timing after the delay.
+        self.start_time = datetime.now()
+        # Ensure the house light is on at trial start.
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
-
         if self.phase_key == "GridDisplay":
             self.show_grid_display()
         else:
             self.next_trial(new_trial=True)
-
-        self.root.mainloop()
 
     def change_cursor_state(self):
         # Toggle cursor visible/off
@@ -878,7 +894,8 @@ class MainScreen:
     def blackout_then_repeat(self):
         self.canvas.delete("all")
         self.canvas.config(bg="black")
-        rpi_board.write(house_light_GPIO_num, False)       # Turn house light off
+        if operant_box_version:
+            rpi_board.write(house_light_GPIO_num, False)       # Turn house light off
         if not operant_box_version:
             self.canvas.create_text(self.screen_width/2, self.screen_height/2,
                                     text="Time Out", fill="white", font=("Helvetica", 32))
@@ -900,7 +917,8 @@ class MainScreen:
     def finish_ITI(self, was_incorrect):
         self.canvas.unbind("<Button-1>")
         self.canvas.delete("all")
-        rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
+        if operant_box_version:
+            rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
         if was_incorrect:
             self.next_trial(new_trial=False)
         else:
@@ -932,6 +950,7 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, False)   # Turn off hopper light
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Lower hopper
+            rpi_board.write(house_light_GPIO_num, True)       # Turn house light back on
         self.start_ITI(incorrect=False)
 
     ########## EXIT
@@ -966,6 +985,7 @@ class MainScreen:
         ccoord = curr_dot_coord if curr_dot_coord else "NA"
         pcoord = prev_dot_coord if prev_dot_coord else "NA"
         phase_label = PHASE_LABELS.get(self.phase_key, "NA")
+        # "Line Distance" is always NA for now.
         row = [
             str(self.trial_counter),
             str(self.attempt_counter),
@@ -980,6 +1000,7 @@ class MainScreen:
             str(IRI),
             self.start_time.strftime('%Y-%m-%d_%H.%M.%S'),
             phase_label,
+            "NA",  # Line Distance column set to NA for now.
             region,
             self.experiment_name,
             self.box_number,
