@@ -212,9 +212,10 @@ class ExperimenterControlPanel:
         self.control_window = Tk()
         self.control_window.title("PigeonSketch Control Panel")
 
-        self.pigeon_name_list = ["TEST", "Itzamna", "Waluigi", "Evaristo", "Sting",
+        self.pigeon_name_list = ["Itzamna", "Waluigi", "Evaristo", "Sting",
                                   "Mario", "Durrell"]
         self.pigeon_name_list.sort()
+        self.pigeon_name_list.insert(0, "TEST")
 
         Label(self.control_window, text="Subject Name:").pack()
         self.subject_ID_variable = StringVar(self.control_window)
