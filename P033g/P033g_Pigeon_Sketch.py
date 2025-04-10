@@ -212,8 +212,8 @@ class ExperimenterControlPanel:
         self.control_window = Tk()
         self.control_window.title("PigeonSketch Control Panel")
 
-        self.pigeon_name_list = ["Itzamna", "Waluigi", "Evaristo", "Sting",
-                                  "Mario", "Durrell"]
+        # Updated subject list: Itzamna and Sting removed; Hendrix and Joplin added.
+        self.pigeon_name_list = ["Hendrix", "Joplin", "Waluigi", "Evaristo", "Mario", "Durrell"]
         self.pigeon_name_list.sort()
         self.pigeon_name_list.insert(0, "TEST")
 
@@ -452,8 +452,14 @@ class MainScreen:
         num_cols_right = (right_width - circle_spacing) // (non_filled_circle_size + circle_spacing)
         num_rows_right = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
 
-        # --- Remove top row: start at row index 1 instead of 0 ---
-        for row in range(1, num_rows_left):
+        # Determine additional row skip for subjects Waluigi, Durrell, or Mario.
+        if self.subject_ID in {"Waluigi", "Durrell", "Mario"}:
+            extra_row_skip = 2  # Skip two rows (row indices 0 and 1)
+        else:
+            extra_row_skip = 1  # Skip one row (row index 0)
+
+        # --- Remove top row(s): start at row index extra_row_skip instead of 0 ---
+        for row in range(extra_row_skip, num_rows_left):
             for col in range(num_cols_left):
                 x = left_x_start + grid_offset + col * (non_filled_circle_size + circle_spacing)
                 y = left_y_start + row * (non_filled_circle_size + circle_spacing)
@@ -463,7 +469,7 @@ class MainScreen:
                           color="#3b3b3b")
                 self.dot_grid_left.append(dot)
 
-        for row in range(1, num_rows_right):
+        for row in range(extra_row_skip, num_rows_right):
             for col in range(num_cols_right):
                 x = right_x_start + grid_offset + col * (non_filled_circle_size + circle_spacing)
                 y = right_y_start + row * (non_filled_circle_size + circle_spacing)
@@ -945,6 +951,7 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, False)
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)
+            # Removed: rpi_board.write(house_light_GPIO_num, True)
         self.start_ITI(incorrect=False)
 
     ########## EXIT
