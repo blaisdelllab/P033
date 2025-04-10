@@ -170,7 +170,7 @@ PHASE_LABELS = {
 # DOT CLASS
 #############################
 class Dot:
-    def __init__(self, row, col, x, y, receptive_size, visible_size, color="#7f7f7f"):
+    def __init__(self, row, col, x, y, receptive_size, visible_size, color="#3b3b3b"):
         self.row = row
         self.col = col
         self.x0 = x
@@ -429,9 +429,11 @@ class MainScreen:
 
     ########## DOT GENERATION
     def generate_dots(self):
-        filled_circle_size = 40
-        non_filled_circle_size = 60
-        circle_spacing = 50
+        # New sizes: visible dot size increased from 40 to 50,
+        # receptive field increased from 60 to 75 (125% of original).
+        filled_circle_size = 45
+        non_filled_circle_size = 68
+        circle_spacing = 45
         left_x_start = circle_spacing
         left_y_start = circle_spacing
         left_width = self.screen_width // 2
@@ -439,6 +441,9 @@ class MainScreen:
         right_x_start = self.screen_width // 2 + circle_spacing
         right_y_start = circle_spacing
         right_width = self.screen_width - (self.screen_width // 2)
+
+        # Introduce a grid horizontal offset variable (adjust as needed).
+        grid_offset = 7
 
         num_cols_left = (left_width - circle_spacing) // (non_filled_circle_size + circle_spacing)
         num_rows_left = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
@@ -448,25 +453,25 @@ class MainScreen:
         # --- Remove top row: start at row index 1 instead of 0 ---
         for row in range(1, num_rows_left):
             for col in range(num_cols_left):
-                x = left_x_start + col * (non_filled_circle_size + circle_spacing)
+                x = left_x_start + grid_offset + col * (non_filled_circle_size + circle_spacing)
                 y = left_y_start + row * (non_filled_circle_size + circle_spacing)
                 dot = Dot(row=row, col=col, x=x, y=y,
                           receptive_size=non_filled_circle_size,
                           visible_size=filled_circle_size,
-                          color="#7f7f7f")
+                          color="#3b3b3b")
                 self.dot_grid_left.append(dot)
 
         for row in range(1, num_rows_right):
             for col in range(num_cols_right):
-                x = right_x_start + col * (non_filled_circle_size + circle_spacing)
+                x = right_x_start + grid_offset + col * (non_filled_circle_size + circle_spacing)
                 y = right_y_start + row * (non_filled_circle_size + circle_spacing)
                 dot = Dot(row=row, col=col, x=x, y=y,
                           receptive_size=non_filled_circle_size,
                           visible_size=filled_circle_size,
-                          color="#7f7f7f")
+                          color="#3b3b3b")
                 self.dot_grid_right.append(dot)
         # -----------------------------------------------------------
-        
+
     ########## SHOW GRID DISPLAY
     def show_grid_display(self):
         self.canvas.delete("all")
@@ -745,7 +750,7 @@ class MainScreen:
                         distractors = self.current_trial_config["distractor_dots"]
                     for d_dot in distractors:
                         d_dot.visible = True
-                        d_dot.color = "#7f7f7f"
+                        d_dot.color = "#3b3b3b"
                 else:
                     if "distractor_dot" in self.current_trial_config:
                         dist = self.current_trial_config["distractor_dot"]
@@ -758,7 +763,7 @@ class MainScreen:
                             self.current_trial_config["distractor_dot"] = dist
                     if dist is not None:
                         dist.visible = True
-                        dist.color = "#7f7f7f"
+                        dist.color = "#3b3b3b"
         elif self.phase_config.get("sketch_total", None) or self.phase_key == "1d":
             sample_dots = self.current_trial_config["sample_dots"]
             for sd in sample_dots:
@@ -771,14 +776,14 @@ class MainScreen:
                 if rdot_choices:
                     dist = choice(rdot_choices)
                     dist.visible = True
-                    dist.color = "#7f7f7f"
+                    dist.color = "#3b3b3b"
                     self.current_trial_config["distractor_dot"] = dist
             elif self.phase_key in ["2b_random", "3a_standard", "3b_random"]:
                 distractor_candidates = [d for d in self.dot_grid_right if not d.visible]
                 if distractor_candidates:
                     dist = choice(distractor_candidates)
                     dist.visible = True
-                    dist.color = "#7f7f7f"
+                    dist.color = "#3b3b3b"
                     self.current_trial_config["distractor_dot"] = dist
         self.draw_all_dots()
         self.right_first_dot = None
