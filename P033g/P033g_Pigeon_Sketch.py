@@ -429,17 +429,19 @@ class MainScreen:
 
     ########## DOT GENERATION
     def generate_dots(self):
-        # New sizes: visible dot size increased from 40 to 50,
-        # receptive field increased from 60 to 75 (125% of original).
+        # New sizes: visible dot size increased from 40 to 45,
+        # receptive field increased from 60 to 68 (approximately 125% scaling of original values)
         filled_circle_size = 45
         non_filled_circle_size = 68
         circle_spacing = 45
         left_x_start = circle_spacing
-        left_y_start = circle_spacing
+        # Introduce vertical offset variable:
+        grid_vertical_offset = 35
+        left_y_start = circle_spacing + grid_vertical_offset
         left_width = self.screen_width // 2
 
         right_x_start = self.screen_width // 2 + circle_spacing
-        right_y_start = circle_spacing
+        right_y_start = circle_spacing + grid_vertical_offset
         right_width = self.screen_width - (self.screen_width // 2)
 
         # Introduce a grid horizontal offset variable (adjust as needed).
