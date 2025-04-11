@@ -16,6 +16,9 @@ from PIL import Image, ImageTk
 from os import path, getcwd, mkdir, popen
 from screeninfo import get_monitors
 
+# With Pillow 11.1, use the new resampling API:
+resample_filter = Image.Resampling.LANCZOS
+
 # The first variable declared is whether the program is the operant box version
 # for pigeons, or the test version for humans to view. The variable below is 
 # a T/F boolean that will be referenced many times throughout the program 
@@ -26,7 +29,7 @@ from screeninfo import get_monitors
 # on a rapberry pi) or False if not. The output of os_path.expanduser('~')
 # should be "/home/blaisdelllab" on the RPis
 
-if path.expanduser('~').split("/")[2] =="blaisdelllab":
+if path.expanduser('~').split("/")[2] == "blaisdelllab":
     operant_box_version = True
     print("*** Running operant box version *** \n")
 else:
@@ -37,7 +40,7 @@ else:
 try:
     if operant_box_version:
         # Import additional libraries...
-        import pigpio # import pi, OUTPUT
+        import pigpio  # import pi, OUTPUT
         
         # Setup GPIO numbers (NOT PINS; gpio only compatible with GPIO num)
         servo_GPIO_num = 2
@@ -48,19 +51,15 @@ try:
         rpi_board = pigpio.pi()
         
         # Then set each pin to output 
-        rpi_board.set_mode(servo_GPIO_num,
-                           pigpio.OUTPUT) # Servo motor...
-        rpi_board.set_mode(hopper_light_GPIO_num,
-                           pigpio.OUTPUT) # Hopper light LED...
-        rpi_board.set_mode(house_light_GPIO_num,
-                           pigpio.OUTPUT) # House light LED...
+        rpi_board.set_mode(servo_GPIO_num, pigpio.OUTPUT)  # Servo motor...
+        rpi_board.set_mode(hopper_light_GPIO_num, pigpio.OUTPUT)  # Hopper light LED...
+        rpi_board.set_mode(house_light_GPIO_num, pigpio.OUTPUT)  # House light LED...
         
         # Setup the servo motor 
-        rpi_board.set_PWM_frequency(servo_GPIO_num,
-                                    50) # Default frequency is 50 MhZ
+        rpi_board.set_PWM_frequency(servo_GPIO_num, 50)  # Default frequency is 50 MhZ
         
         # Next grab the up/down 
-        hopper_vals_csv_path = str(path.expanduser('~')+"/Desktop/Box_Info/Hopper_vals.csv")
+        hopper_vals_csv_path = str(path.expanduser('~') + "/Desktop/Box_Info/Hopper_vals.csv")
         
         # Store the proper UP/DOWN values for the hopper from csv file
         up_down_table = list(csv.reader(open(hopper_vals_csv_path)))
@@ -69,15 +68,9 @@ try:
         
         # Lastly, run the shell script that maps the touchscreen to operant box monitor
         popen("sh /home/blaisdelllab/Desktop/Hardware_Code/map_touchscreen.sh")
-                             
-        
 except ModuleNotFoundError:
     input("ERROR: Cannot find hopper hardware! Check desktop.")
 
-
-
-# With Pillow 11.1, use the new resampling API:
-resample_filter = Image.Resampling.LANCZOS
 
 class PigeonPainter:
     def __init__(self, root, subject, target_path):
@@ -155,7 +148,7 @@ class PigeonPainter:
         self.first_round_done = False
         self.first_sample_shown = False
     
-        self.SURPRISE_PROB = 0.01 
+        self.SURPRISE_PROB = 0.01
         self.cooldown = False
     
         self.NDots = 0
@@ -249,12 +242,11 @@ class PigeonPainter:
         self.paint_canvas.bind("<Button-1>", self.paint_on_click)
         
         # Reinforcement info
-        self.timed_reinforcement_interval = 15 * 60 * 1000 # 15 min in milliseconds
+        self.timed_reinforcement_interval = 15 * 60 * 1000  # 15 min in milliseconds
         self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
                                                     lambda: self.start_reinforcement("timed_reinforcement"))
         
-        self.hopper_time = 4 * 1000 # 4s
-        
+        self.hopper_time = 4 * 1000  # 4s
         
         self.polygon_VR = 80
         self.polygon_VR_range = 5
@@ -263,8 +255,7 @@ class PigeonPainter:
         
         # Turn on houseline (if operant box version)
         if operant_box_version:
-            rpi_board.write(house_light_GPIO_num, 
-                            True) # Turn on house light
+            rpi_board.write(house_light_GPIO_num, True)  # Turn on house light
     
     # --------------------------- Logging and Saving ---------------------------
     def log_event(self, event_label, x=None, y=None, choice_location=None):
@@ -295,7 +286,6 @@ class PigeonPainter:
             "Date": str(self.date_str),
             "SurpriseProb": self.SURPRISE_PROB,
             "PolygonVR": self.polygon_VR
-            
         }
         self.data_log.append(row)
         self.prev_event_time = current_time
@@ -304,7 +294,7 @@ class PigeonPainter:
             self.prev_y = y
         
         # Check if response should be reinforced
-        if  self.n_shapes ==  self.crit_num_shapes:
+        if self.n_shapes == self.crit_num_shapes:
             print(self.n_shapes)
             self.crit_num_shapes += random.choice(list(range(self.polygon_VR - self.polygon_VR_range,
                                                              self.polygon_VR + self.polygon_VR_range)))
@@ -740,7 +730,7 @@ class PigeonPainter:
         cy = (y1+y2)/2
         if random.random() < self.SURPRISE_PROB:
             self.log_event("surprise_triggered")
-            self.draw_rainbow_shape("circle", cx, cy, (x1,y1), (x2,y2))
+            self.display_surprise_image(x1, y1, x2, y2)
         else:
             self.paint_canvas.create_oval(cx - r, cy - r, cx + r, cy + r,
                                           outline=color, fill="", width=lw)
@@ -754,19 +744,19 @@ class PigeonPainter:
         my = (y1+y2)/2
         dx = x1 - mx
         dy = y1 - my
-        def rotate(px,py,c,s):
+        def rotate(px, py, c, s):
             return px*c - py*s, px*s + py*c
         c120 = -0.5
         s120 = math.sqrt(3)/2
-        rxp, ryp = rotate(dx,dy,c120,s120)
+        rxp, ryp = rotate(dx, dy, c120, s120)
         xp, yp = mx+rxp, my+ryp
-        rxm, rym = rotate(dx,dy,c120,-s120)
+        rxm, rym = rotate(dx, dy, c120, -s120)
         xm, ym = mx+rxm, my+rym
         if random.random() < self.SURPRISE_PROB:
             self.log_event("surprise_triggered")
-            self.draw_rainbow_equilateral(x1,y1,xp,yp,xm,ym)
+            self.display_surprise_image(x1, y1, x2, y2)
         else:
-            self.paint_canvas.create_polygon(x1,y1,xp,yp,xm,ym,
+            self.paint_canvas.create_polygon(x1, y1, xp, yp, xm, ym,
                                              outline=color, fill="", width=lw)
         self.n_shapes += 1
         self.check_auto_save()
@@ -792,9 +782,7 @@ class PigeonPainter:
         right_bot_y = botmidy - perp_y*half
         if random.random() < self.SURPRISE_PROB:
             self.log_event("surprise_triggered")
-            self.draw_rainbow_shape("square",
-                                    (topmidx+botmidx)/2, (topmidy+botmidy)/2,
-                                    (topmidx, topmidy), (botmidx, botmidy))
+            self.display_surprise_image(topmidx, topmidy, botmidx, botmidy)
         else:
             self.paint_canvas.create_polygon(
                 left_top_x, left_top_y,
@@ -808,6 +796,67 @@ class PigeonPainter:
     def get_line_width(self):
         thickness_map = {"thin": 2, "middle": 5, "thick": 8}
         return thickness_map.get(self.selected_thickness, 2)
+    
+    # --------------------------- New Helper: Display Surprise Image Using Top and Bottom Mid Points ---------------------------
+    def display_surprise_image(self, x1, y1, x2, y2):
+        """
+        Load the surprise PNG "Blaisdell_Comparative_Cognition_Lab_-_1.png", then
+        resize and rotate it so that:
+          - its new height is exactly the distance between the two pecks,
+          - the first peck (x1,y1) becomes the midpoint of its top border, and
+          - the second peck (x2,y2) becomes the midpoint of its bottom border.
+        """
+        dx = x2 - x1
+        dy = y2 - y1
+        distance = math.hypot(dx, dy)  # This will be the new height of the image
+        try:
+            surprise_img = Image.open(self.target_path + "Blaisdell_Comparative_Cognition_Lab_transparent.png").convert("RGBA")
+        except Exception as e:
+            print(f"[DEBUG] Error loading surprise image: {e}")
+            return
+        # Compute scaling factor so that the new height equals the distance between pecks.
+        orig_width, orig_height = surprise_img.size
+        scale_factor = distance / orig_height
+        new_width = max(1, int(orig_width * scale_factor))
+        new_height = max(1, int(orig_height * scale_factor))  # This should equal 'distance'
+        resized_img = surprise_img.resize((new_width, new_height), resample_filter)
+        # Calculate the angle needed.
+        # The vector from the top to bottom in an upright image is (0, new_height).
+        # Its angle (relative to the positive x-axis) is 90 degrees.
+        # The vector defined by the two pecks has angle:
+        phi = math.degrees(math.atan2(dy, dx))
+        # To align the image’s vertical with the peck vector, rotate by (phi - 90)
+        theta = phi - 90
+        rotated_img = resized_img.rotate(theta, expand=True)
+        w_rot, h_rot = rotated_img.size
+        
+        # The original (resized) image’s top midpoint is at (new_width/2, 0).
+        # When rotated about its center, we can compute its new position.
+        # Center of resized image:
+        cx_orig = new_width / 2
+        cy_orig = new_height / 2
+        # Offset of the top midpoint from the center (in the resized image):
+        offset_top_x = 0
+        offset_top_y = -new_height / 2
+        # Rotate this offset by theta (in radians)
+        theta_rad = math.radians(theta)
+        rotated_offset_x = offset_top_x * math.cos(theta_rad) - offset_top_y * math.sin(theta_rad)
+        rotated_offset_y = offset_top_x * math.sin(theta_rad) + offset_top_y * math.cos(theta_rad)
+        # After rotation, the rotated image's center is at (w_rot/2, h_rot/2). Therefore, the location
+        # of the top midpoint in the rotated image is:
+        top_mid_x = w_rot/2 + rotated_offset_x
+        top_mid_y = h_rot/2 + rotated_offset_y
+        
+        # We want this top midpoint to align exactly with the first peck (x1,y1).
+        # So, when placing the image on the canvas (using anchor="nw"), we calculate the top-left coordinate:
+        top_left_x = x1 - top_mid_x
+        top_left_y = y1 - top_mid_y
+        
+        tk_img = ImageTk.PhotoImage(rotated_img)
+        self.paint_canvas.create_image(top_left_x, top_left_y, image=tk_img, anchor="nw")
+        if not hasattr(self.paint_canvas, 'images'):
+            self.paint_canvas.images = []
+        self.paint_canvas.images.append(tk_img)
     
     def draw_rainbow_shape(self, shape_type, cx, cy, p1, p2):
         rainbow = ["red", "orange", "yellow", "green", "blue", "indigo", "purple"]
@@ -912,7 +961,7 @@ class PigeonPainter:
             
     def start_reinforcement(self, type_of_reinforcment):
         print(f"** {type_of_reinforcment} started **")
-        self.log_event(type_of_reinforcment) # Save data event
+        self.log_event(type_of_reinforcment)  # Save data event
         # Cancel auto timer
         try:
             self.root.after_cancel(self.timed_reinforcement_timer)
@@ -920,25 +969,18 @@ class PigeonPainter:
             pass
         # Next send output to the box's hardware
         if operant_box_version:
-            rpi_board.write(house_light_GPIO_num,
-                            False) # Turn off the house light
-            rpi_board.write(hopper_light_GPIO_num,
-                            True) # Turn off the house light
-            rpi_board.set_servo_pulsewidth(servo_GPIO_num,
-                                           hopper_up_val) # Move hopper to up position
+            rpi_board.write(house_light_GPIO_num, False)  # Turn off the house light
+            rpi_board.write(hopper_light_GPIO_num, True)    # Turn on the hopper light
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_up_val)  # Move hopper to up position
         # Set a timer to raise hopper
-        self.root.after(self.hopper_time,
-                        lambda: self.end_reinforcement())
+        self.root.after(self.hopper_time, lambda: self.end_reinforcement())
     
     def end_reinforcement(self):
         print("** Reinforcement ended **")
         if operant_box_version:
-            rpi_board.write(hopper_light_GPIO_num,
-                            False) # Turn off the hopper light
-            rpi_board.set_servo_pulsewidth(servo_GPIO_num,
-                                           hopper_down_val) # Hopper down
-            rpi_board.write(house_light_GPIO_num, 
-                            True) # Turn on house light
+            rpi_board.write(hopper_light_GPIO_num, False)  # Turn off the hopper light
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Hopper down
+            rpi_board.write(house_light_GPIO_num, True)  # Turn on house light
         # Create a new timer
         self.timed_reinforcement_timer = self.root.after(self.timed_reinforcement_interval,
                                                     lambda: self.start_reinforcement("timed_reinforcement"))
