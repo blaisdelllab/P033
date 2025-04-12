@@ -212,7 +212,7 @@ class ExperimenterControlPanel:
         self.control_window = Tk()
         self.control_window.title("PigeonSketch Control Panel")
 
-        # Updated subject list: Itzamna and Sting removed; Hendrix and Joplin added.
+        # Updated subject list: Itzamna and Sting replaced with Hendrix and Joplin.
         self.pigeon_name_list = ["Hendrix", "Joplin", "Waluigi", "Evaristo", "Mario", "Durrell"]
         self.pigeon_name_list.sort()
         self.pigeon_name_list.insert(0, "TEST")
@@ -328,6 +328,9 @@ class MainScreen:
             self.canvas = self.mastercanvas
         # -------------------------------------------
 
+        # Bind the space bar for manual reinforcement.
+        self.root.bind("<space>", self.manual_reinforcement_handler)
+
         # Updated header: added "Line Distance" after "Phase"
         header = [
             "TrialNum", "Attempt", "SessionTime", "Xcord", "Ycord", "PrevX", "PrevY",
@@ -401,6 +404,21 @@ class MainScreen:
             self.root.config(cursor="")
             print("### Cursor turned on ###")
             self.cursor_visible = True
+
+    # --- NEW: Manual reinforcement handler triggered by space bar ---
+    def manual_reinforcement_handler(self, event):
+        # Write a manual reinforcement event into the data log.
+        self.write_data("NA", "NA", "manual_reinforcement", "NA", 0)
+        if operant_box_version:
+            rpi_board.write(hopper_light_GPIO_num, True)     # Turn on hopper light
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_up_val)  # Raise hopper
+            # After the reinforcement duration, lower the hopper and turn off the hopper light.
+            self.root.after(self.reinforcement_duration, self.end_manual_reinforcement)
+
+    def end_manual_reinforcement(self):
+        if operant_box_version:
+            rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)  # Lower hopper
+            rpi_board.write(hopper_light_GPIO_num, False)    # Turn off hopper light
 
     ########## PHASE PARSER
     def parse_phase_key(self, title):
@@ -951,7 +969,7 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, False)
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_down_val)
-            # Removed: rpi_board.write(house_light_GPIO_num, True)
+            # Note: House light is not turned on here as per specifications.
         self.start_ITI(incorrect=False)
 
     ########## EXIT
