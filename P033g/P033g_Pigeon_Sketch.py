@@ -471,8 +471,10 @@ class MainScreen:
         num_rows_right = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
 
         # Determine additional row skip for subjects Waluigi, Durrell, or Mario.
-        if self.subject_ID in {"Waluigi", "Durrell", "Mario"}:
+        if self.subject_ID in {"Waluigi", "Mario"}:
             extra_row_skip = 2  # Skip two rows (row indices 0 and 1)
+        elif self.subject_ID == "Durrell":
+            extra_row_skip = 3
         else:
             extra_row_skip = 1  # Skip one row (row index 0)
 
