@@ -449,9 +449,9 @@ class MainScreen:
     def generate_dots(self):
         # New sizes: visible dot size increased from 40 to 45,
         # receptive field increased from 60 to 68 (approximately 125% scaling of original values)
-        filled_circle_size = 45
-        non_filled_circle_size = 68
-        circle_spacing = 45
+        filled_circle_size = 50
+        non_filled_circle_size = 78
+        circle_spacing = 38
         left_x_start = circle_spacing
         # Introduce vertical offset variable:
         grid_vertical_offset = 35
@@ -463,7 +463,7 @@ class MainScreen:
         right_width = self.screen_width - (self.screen_width // 2)
 
         # Introduce a grid horizontal offset variable (adjust as needed).
-        grid_offset = 7
+        grid_offset = 3
 
         num_cols_left = (left_width - circle_spacing) // (non_filled_circle_size + circle_spacing)
         num_rows_left = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
@@ -498,15 +498,25 @@ class MainScreen:
                 self.dot_grid_right.append(dot)
         # -----------------------------------------------------------
 
-    ########## SHOW GRID DISPLAY
+    def draw_grid_dot(self, dot):
+        # Draw the receptive field with a distinct color (e.g., light gray)
+        self.canvas.create_oval(dot.x0, dot.y0, dot.x1, dot.y1,
+                                fill="#cccccc", outline="#cccccc", tags="dots_rf")
+        # Then draw the visible dot using the standard dot.draw() method.
+        dot.draw(self.canvas)
+
     def show_grid_display(self):
         self.canvas.delete("all")
         self.draw_background(False)
+        # Make all dots in both grids visible.
         for d in self.dot_grid_left:
             d.visible = True
         for d in self.dot_grid_right:
             d.visible = True
-        self.draw_all_dots()
+        # Instead of using draw_all_dots(), loop through all dots and use draw_grid_dot()
+        # so that we draw both the receptive field and the visible dot.
+        for d in self.dot_grid_left + self.dot_grid_right:
+            self.draw_grid_dot(d)
 
     ########## DRAW BACKGROUND
     def draw_background(self, active_right=False):
