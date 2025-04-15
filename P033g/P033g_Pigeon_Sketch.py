@@ -951,6 +951,8 @@ class MainScreen:
         self.canvas.delete("all")
         if operant_box_version:
             rpi_board.write(house_light_GPIO_num, True)
+        # Save data incrementally after finishing the ITI of each trial.
+        self.write_comp_data(False)
         if was_incorrect:
             self.next_trial(new_trial=False)
         else:
@@ -990,18 +992,28 @@ class MainScreen:
             rpi_board.write(hopper_light_GPIO_num, False)
         if self.record_data:
             self.write_data("NA", "NA", "SessionEnds", "NA", 0)
-            fname = path.join(self.data_folder_directory, self.subject_ID,
-                              f"{self.subject_ID}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_{self.experiment_name}_{self.exp_phase_title}.csv")
-            with open(fname, 'w', newline='') as f:
-                w = csv.writer(f)
-                w.writerows(self.session_data)
-            print(f"Data file written => {fname}")
+            self.write_comp_data(True)
         try:
             self.root.destroy()
         except TclError:
             pass
         print("Session ended. You may close the terminal.")
         sys.exit(0)
+        
+    def write_comp_data(self, sessionEnded):
+        """
+        Writes the current session data (self.session_data) to a CSV file located in the subject's folder.
+        If sessionEnded is True, this is the final write; otherwise, it updates the file trial-by-trial.
+        """
+        myFile_loc = path.join(self.data_folder_directory, self.subject_ID,
+                               f"{self.subject_ID}_{self.start_time.strftime('%Y-%m-%d_%H.%M.%S')}_PigeonSketch_{self.exp_phase_title}.csv")
+        with open(myFile_loc, 'w', newline='') as f:
+            w = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
+            w.writerows(self.session_data)
+        if sessionEnded:
+            print(f"Final data file written => {myFile_loc}")
+        else:
+            print(f"Data file updated => {myFile_loc}")
 
     ########## DATA LOGGING
     def write_data(self, x, y, event_type, region, IRI, curr_dot_coord=None, prev_dot_coord=None):
