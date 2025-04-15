@@ -335,7 +335,8 @@ class MainScreen:
         header = [
             "TrialNum", "Attempt", "SessionTime", "Xcord", "Ycord", "PrevX", "PrevY",
             "EventType", "CurrentDotCoord", "PrevDotCoord", "IRI", "StartTime",
-            "Phase", "Line Distance", "Region", "Experiment", "BoxNumber", "Subject", "Date"
+            "Phase", "Line Distance", "Correct Dot", "Distractor Dot", "Region",
+            "Experiment", "BoxNumber", "Subject", "Date"
         ]
         self.session_data = [header]
 
@@ -1016,6 +1017,23 @@ class MainScreen:
         ccoord = curr_dot_coord if curr_dot_coord else "NA"
         pcoord = prev_dot_coord if prev_dot_coord else "NA"
         phase_label = PHASE_LABELS.get(self.phase_key, "NA")
+        
+        # Calculate Correct Dot(s)
+        if "sample_dots" in self.current_trial_config and self.current_trial_config["sample_dots"]:
+            correct_dot = str([[dot.row, dot.col] for dot in self.current_trial_config["sample_dots"]])
+        else:
+            correct_dot = "NA"
+        
+        # Calculate Distractor Dot(s)
+        if "distractor_dots" in self.current_trial_config and self.current_trial_config["distractor_dots"]:
+            distractor_dot = str([[dot.row, dot.col] for dot in self.current_trial_config["distractor_dots"]])
+        elif "distractor_dot" in self.current_trial_config and self.current_trial_config["distractor_dot"]:
+            distractor_dot = str([[self.current_trial_config["distractor_dot"].row,
+                                    self.current_trial_config["distractor_dot"].col]])
+        else:
+            distractor_dot = "NA"
+        
+        # Build the row without a proximity value.
         row = [
             str(self.trial_counter),
             str(self.attempt_counter),
@@ -1031,6 +1049,8 @@ class MainScreen:
             self.start_time.strftime('%Y-%m-%d_%H.%M.%S'),
             phase_label,
             "NA",  # Line Distance (always NA for now)
+            correct_dot,
+            distractor_dot,
             region,
             self.experiment_name,
             self.box_number,
@@ -1038,8 +1058,8 @@ class MainScreen:
             date.today().strftime("%y-%m-%d")
         ]
         self.session_data.append(row)
-        print(f"LOG => {event_type:>20} | Trial:{self.trial_counter},Att:{self.attempt_counter} | x:{x_str},y:{y_str}, region:{region}, Phase:{phase_label}, cCoord:{ccoord}, pCoord:{pcoord} | {session_time_str}")
-
+        print(f"LOG => {event_type:>20} | Trial:{self.trial_counter}, Att:{self.attempt_counter} | x:{x_str}, y:{y_str}, region:{region}, Phase:{phase_label}, cCoord:{ccoord}, pCoord:{pcoord} | {session_time_str}")
+        
     ########## UTILS
     def three_dots_collinear(self, three_dots):
         coords = []
