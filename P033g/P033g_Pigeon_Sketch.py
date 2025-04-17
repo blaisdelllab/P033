@@ -471,8 +471,8 @@ class MainScreen:
         num_cols_right = (right_width - circle_spacing) // (non_filled_circle_size + circle_spacing)
         num_rows_right = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
 
-        # Determine additional row skip for subjects Waluigi, Hawthorne, or Mario.
-        if self.subject_ID in {"Waluigi", "Mario", "Hawthorne"}:
+        # Determine additional row skip for subjects Waluigi, Hawthorne, Mario, or Evaristo.
+        if self.subject_ID in {"Waluigi", "Mario", "Hawthorne", "Evaristo"}:
             extra_row_skip = 2  # Skip two rows (row indices 0 and 1)
         else:
             extra_row_skip = 1  # Skip one row (row index 0)
