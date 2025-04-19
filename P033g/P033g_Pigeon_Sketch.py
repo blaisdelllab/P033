@@ -287,7 +287,10 @@ class MainScreen:
 
         if operant_box_version:
             self.ITI_duration = 10000
-            self.reinforcement_duration = 6000
+            if self.subject_ID == "Waluigi":
+                self.reinforcement_duration = 4000
+            else:
+                self.reinforcement_duration = 6000
         else:
             self.ITI_duration = 1000
             self.reinforcement_duration = 1000
