@@ -330,6 +330,8 @@ class MainScreen:
 
         # Bind the space bar for manual reinforcement.
         self.root.bind("<space>", self.manual_reinforcement_handler)
+        # Bind “s” to lower the hopper & turn off the hopper light
+        self.root.bind("s", lambda event: self.end_manual_reinforcement())
 
         # Updated header: added "Line Distance" after "Phase"
         header = [
@@ -413,8 +415,6 @@ class MainScreen:
         if operant_box_version:
             rpi_board.write(hopper_light_GPIO_num, True)     # Turn on hopper light
             rpi_board.set_servo_pulsewidth(servo_GPIO_num, hopper_up_val)  # Raise hopper
-            # After the reinforcement duration, lower the hopper and turn off the hopper light.
-            self.root.after(self.reinforcement_duration, self.end_manual_reinforcement)
 
     def end_manual_reinforcement(self):
         if operant_box_version:
