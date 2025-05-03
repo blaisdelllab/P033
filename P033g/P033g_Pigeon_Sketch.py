@@ -213,7 +213,7 @@ class ExperimenterControlPanel:
         self.control_window.title("PigeonSketch Control Panel")
 
         # Updated subject list: Itzamna and Sting replaced with Hendrix and Joplin.
-        self.pigeon_name_list = ["Hendrix", "Joplin", "Waluigi", "Evaristo", "Mario", "Hawthorne"]
+        self.pigeon_name_list = ["Luigi", "Joplin", "Waluigi", "Wenchang", "Mario", "Sting"]
         self.pigeon_name_list.sort()
         self.pigeon_name_list.insert(0, "TEST")
 
@@ -475,7 +475,7 @@ class MainScreen:
         num_rows_right = (self.screen_height - circle_spacing) // (non_filled_circle_size + circle_spacing)
 
         # Determine additional row skip for subjects Waluigi, Hawthorne, Mario, or Evaristo.
-        if self.subject_ID in {"Waluigi", "Mario", "Hawthorne", "Evaristo"}:
+        if self.subject_ID in {"Waluigi", "Mario", "Wenchang", "Luigi"}:
             extra_row_skip = 2  # Skip two rows (row indices 0 and 1)
         else:
             extra_row_skip = 1  # Skip one row (row index 0)
