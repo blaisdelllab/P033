@@ -287,7 +287,7 @@ class MainScreen:
 
         if operant_box_version:
             self.ITI_duration = 10000
-            if self.subject_ID in ["Waluigi", "Mario"]:
+            if self.subject_ID in ["Waluigi", "Mario", "Luigi", "Wenchang"]:
                 self.reinforcement_duration = 4000
             else:
                 self.reinforcement_duration = 6000
@@ -795,9 +795,19 @@ class MainScreen:
                     if "distractor_dot" in self.current_trial_config:
                         dist = self.current_trial_config["distractor_dot"]
                     else:
-                        rdot_choices = [d for d in self.dot_grid_right 
-                                        if (d.row, d.col) not in [(sd.row, sd.col) for sd in sample_dots]
-                                        and not d.visible]
+                        target = sample_dots[0]
+                        forbidden = {
+                            (target.row, target.col),
+                            (target.row+1, target.col),
+                            (target.row-1, target.col),
+                            (target.row, target.col+1),
+                            (target.row, target.col-1),
+                        }
+                        rdot_choices = [
+                            d for d in self.dot_grid_right
+                            if (d.row, d.col) not in forbidden
+                                and not d.visible
+                        ]
                         dist = choice(rdot_choices) if rdot_choices else None
                         if dist is not None:
                             self.current_trial_config["distractor_dot"] = dist
