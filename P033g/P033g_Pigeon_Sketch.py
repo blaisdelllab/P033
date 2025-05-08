@@ -829,12 +829,34 @@ class MainScreen:
                     dist.color = "#3b3b3b"
                     self.current_trial_config["distractor_dot"] = dist
             elif self.phase_key in ["2b_random", "3a_standard", "3b_random"]:
-                distractor_candidates = [d for d in self.dot_grid_right if not d.visible]
-                if distractor_candidates:
-                    dist = choice(distractor_candidates)
+                sample_dots = self.current_trial_config["sample_dots"]
+                for sd in sample_dots:
+                    rd = self.find_right_dot(sd.row, sd.col)
+                    if rd:
+                        rd.visible = True
+                        rd.color = sd.color
+            
+                if "distractor_dot" not in self.current_trial_config:
+                    forbidden_coords = set((d.row, d.col) for d in sample_dots)
+                    for d in sample_dots:
+                        forbidden_coords.update({
+                            (d.row + 1, d.col),
+                            (d.row - 1, d.col),
+                            (d.row, d.col + 1),
+                            (d.row, d.col - 1)
+                        })
+                    distractor_candidates = [
+                        d for d in self.dot_grid_right
+                        if not d.visible and (d.row, d.col) not in forbidden_coords
+                    ]
+                    dist = choice(distractor_candidates) if distractor_candidates else None
+                    if dist is not None:
+                        self.current_trial_config["distractor_dot"] = dist
+            
+                dist = self.current_trial_config.get("distractor_dot", None)
+                if dist is not None:
                     dist.visible = True
                     dist.color = "#3b3b3b"
-                    self.current_trial_config["distractor_dot"] = dist
         self.draw_all_dots()
         self.right_first_dot = None
         for line_id in self.dashed_line_ids:
