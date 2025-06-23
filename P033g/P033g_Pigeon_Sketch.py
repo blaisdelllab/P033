@@ -280,7 +280,7 @@ class MainScreen:
         else:
             self.box_number = "NA"
 
-        self.max_trials = 90
+        self.max_trials = 50 if self.phase_key == "2b_random" else 90
         self.trial_counter = 0
         self.attempt_counter = 0
         self.FR_requirement = 4
@@ -732,35 +732,59 @@ class MainScreen:
         region = "Sample" if x < self.screen_width/2 else "Canvas"
         IRI = round(time() - self.previous_peck_time, 4)
         self.previous_peck_time = time()
+
+        # Find which left-side dot (if any) was clicked
         clicked_dot = None
         for d in self.dot_grid_left:
             if d.visible and d.is_clicked(x, y):
                 clicked_dot = d
                 break
+
+        # Background peck
         if not clicked_dot:
             self.write_data(x, y, "background_peck", region, IRI)
             return
+
+        # Inactive peck on already-selected dot — now log its coords
         if clicked_dot.selected:
-            self.write_data(x, y, "inactive_dot_peck", region, IRI)
+            dotC = f"({clicked_dot.row},{clicked_dot.col})"
+            prevC = self.last_dot_coord or "NA"
+            self.write_data(
+                x, y,
+                "inactive_dot_peck",
+                region,
+                IRI,
+                curr_dot_coord=dotC,
+                prev_dot_coord=prevC
+            )
             return
+
+        # Active sample peck
         prevC = self.last_dot_coord if self.last_dot_coord else "NA"
         dotC = f"({clicked_dot.row},{clicked_dot.col})"
         clicked_dot.peck_count += 1
-        self.write_data(x, y, "sample_peck", region, IRI, curr_dot_coord=dotC, prev_dot_coord=prevC)
+        self.write_data(
+            x, y,
+            "sample_peck",
+            region,
+            IRI,
+            curr_dot_coord=dotC,
+            prev_dot_coord=prevC
+        )
         self.last_dot_coord = dotC
+
+        # Once FR requirement met, move on
         if clicked_dot.peck_count >= self.FR_requirement:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
-            all_fr = True
-            for dd in self.current_trial_config["sample_dots"]:
-                if dd.peck_count < self.FR_requirement:
-                    all_fr = False
+            all_fr = all(dd.peck_count >= self.FR_requirement
+                         for dd in self.current_trial_config["sample_dots"])
             if all_fr:
                 self.canvas.unbind("<Button-1>")
-                if (self.phase_config.get("matching_dot", False) or
-                    self.phase_config.get("distractor", False) or
-                    self.phase_config.get("sketch_total", None) or
-                    self.phase_key in ["1d", "1c2"]):
+                if (self.phase_config.get("matching_dot", False)
+                    or self.phase_config.get("distractor", False)
+                    or self.phase_config.get("sketch_total", None)
+                    or self.phase_key in ["1d", "1c2"]):
                     self.activate_sketch_side()
                 else:
                     self.root.after(1000, self.provide_reinforcement)
@@ -871,25 +895,71 @@ class MainScreen:
         region = "Sample" if x < self.screen_width/2 else "Canvas"
         IRI = round(time() - self.previous_peck_time, 4)
         self.previous_peck_time = time()
+
+        # Click on the sample side during sketch
         if x < self.screen_width // 2:
-            self.write_data(x, y, "sample_inactive_peck", region, IRI)
+            clicked_dot = None
+            for d in self.dot_grid_left:
+                if d.visible and d.is_clicked(x, y):
+                    clicked_dot = d
+                    break
+
+            if clicked_dot:
+                dotC = f"({clicked_dot.row},{clicked_dot.col})"
+                prevC = self.last_dot_coord or "NA"
+                self.write_data(
+                    x, y,
+                    "sample_inactive_peck",
+                    region,
+                    IRI,
+                    curr_dot_coord=dotC,
+                    prev_dot_coord=prevC
+                )
+            else:
+                self.write_data(x, y, "sample_inactive_peck", region, IRI)
             return
+
+        # Now we're on the canvas side
         clicked_dot = None
         for d in self.dot_grid_right:
             if d.visible and d.is_clicked(x, y):
                 clicked_dot = d
                 break
+
+        # Background peck
         if not clicked_dot:
             self.write_data(x, y, "background_peck", region, IRI)
             return
+
+        # Inactive peck on already‐selected dot: log its coords
         if clicked_dot.selected:
-            self.write_data(x, y, "inactive_dot_peck", region, IRI)
+            dotC = f"({clicked_dot.row},{clicked_dot.col})"
+            prevC = self.last_dot_coord or "NA"
+            self.write_data(
+                x, y,
+                "inactive_dot_peck",
+                region,
+                IRI,
+                curr_dot_coord=dotC,
+                prev_dot_coord=prevC
+            )
             return
-        prevC = self.last_dot_coord if self.last_dot_coord else "NA"
+
+        # Active peck on a new dot
+        prevC = self.last_dot_coord or "NA"
         dotC = f"({clicked_dot.row},{clicked_dot.col})"
         clicked_dot.peck_count += 1
-        self.write_data(x, y, "dot_peck", region, IRI, curr_dot_coord=dotC, prev_dot_coord=prevC)
+        self.write_data(
+            x, y,
+            "dot_peck",
+            region,
+            IRI,
+            curr_dot_coord=dotC,
+            prev_dot_coord=prevC
+        )
         self.last_dot_coord = dotC
+
+        # When FR requirement met...
         if clicked_dot.peck_count >= self.FR_requirement:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
