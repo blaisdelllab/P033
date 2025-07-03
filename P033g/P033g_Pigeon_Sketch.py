@@ -919,7 +919,8 @@ class MainScreen:
                 self.write_data(x, y, "sample_inactive_peck", region, IRI)
             return
 
-        # Now we're on the canvas side
+
+        # Now on the canvas side
         clicked_dot = None
         for d in self.dot_grid_right:
             if d.visible and d.is_clicked(x, y):
@@ -931,7 +932,7 @@ class MainScreen:
             self.write_data(x, y, "background_peck", region, IRI)
             return
 
-        # Inactive peck on already‐selected dot: log its coords
+        # Inactive‐dot peck
         if clicked_dot.selected:
             dotC = f"({clicked_dot.row},{clicked_dot.col})"
             prevC = self.last_dot_coord or "NA"
@@ -945,7 +946,7 @@ class MainScreen:
             )
             return
 
-        # Active peck on a new dot
+        # Active peck toward FR-4 on canvas dot
         prevC = self.last_dot_coord or "NA"
         dotC = f"({clicked_dot.row},{clicked_dot.col})"
         clicked_dot.peck_count += 1
@@ -959,75 +960,71 @@ class MainScreen:
         )
         self.last_dot_coord = dotC
 
-        # When FR requirement met...
+        # When FR requirement met on this dot:
         if clicked_dot.peck_count >= self.FR_requirement:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
-            if self.phase_key == "1c2":
-                sample_dot = self.current_trial_config["sample_dots"][0]
-                target_coords = (sample_dot.row, sample_dot.col)
-                if (clicked_dot.row, clicked_dot.col) == target_coords:
-                    self.canvas.unbind("<Button-1>")
-                    self.root.after(1000, self.provide_reinforcement)
-                else:
-                    self.canvas.unbind("<Button-1>")
-                    self.root.after(1000, self.blackout_then_repeat)
-            elif self.phase_config.get("matching_dot", False):
-                if self.phase_config.get("distractor", False):
-                    dist_dot = self.current_trial_config.get("distractor_dot", None)
-                    if dist_dot and (clicked_dot is dist_dot):
-                        self.canvas.unbind("<Button-1>")
-                        self.root.after(1000, self.blackout_then_repeat)
-                    else:
-                        self.canvas.unbind("<Button-1>")
-                        self.root.after(1000, self.provide_reinforcement)
-                else:
-                    self.canvas.unbind("<Button-1>")
-                    self.root.after(1000, self.provide_reinforcement)
-            elif self.phase_config.get("sketch_total", None) or self.phase_key == "1d":
-                if not self.right_first_dot:
-                    self.right_first_dot = clicked_dot
-                    for d in self.dot_grid_right:
-                        if d.visible and (d != self.right_first_dot) and (not d.selected):
-                            cx1, cy1 = self.right_first_dot.center()
-                            cx2, cy2 = d.center()
-                            line_id = self.canvas.create_line(cx1, cy1, cx2, cy2,
-                                                                fill="black", dash=(4, 2), width=2, tags="dots")
-                            self.dashed_line_ids.append(line_id)
-                else:
-                    for line_id in self.dashed_line_ids:
-                        self.canvas.delete(line_id)
-                    self.dashed_line_ids = []
-                    dot1 = self.right_first_dot
-                    dot2 = clicked_dot
-                    good_line = False
-                    if "sample_line" in self.current_trial_config:
-                        linePair = self.current_trial_config["sample_line"][0]
-                        chosen_sorted = sorted([(dot1.row, dot1.col), (dot2.row, dot2.col)])
-                        if chosen_sorted == sorted([linePair[0], linePair[1]]):
-                            good_line = True
-                    cx1, cy1 = dot1.center()
-                    cx2, cy2 = dot2.center()
-                    if good_line:
-                        self.canvas.create_line(cx1, cy1, cx2, cy2,
-                                                fill="black", width=3, tags="dots")
-                    else:
-                        self.canvas.create_line(cx1, cy1, cx2, cy2,
-                                                fill="red", dash=(4, 2), width=3, tags="dots")
-                    self.canvas.unbind("<Button-1>")
-                    self.root.after(1000, self.provide_reinforcement if good_line else self.blackout_then_repeat)
+
+            # —— NEW: immediate failure if first‐selection is the lone distractor ——
+            # Identify if this is the very first FR-complete on this trial:
+            first_FR = (self.right_first_dot is None)
+            # Check if this dot is not one of the two correct endpoints:
+            endpoints = [(sd.row, sd.col) for sd in self.current_trial_config["sample_dots"]]
+            is_distractor = first_FR and ((clicked_dot.row, clicked_dot.col) not in endpoints)
+
+            if is_distractor:
+                # immediately time‐out and start correction
+                self.canvas.unbind("<Button-1>")
+                self.root.after(1000, self.blackout_then_repeat)
+                return
+            # ————————————————————————————————————————————————————————————
+
+            # Otherwise, treat as first‐endpoint pick or second pick:
+            if first_FR:
+                # this is the first endpoint selection
+                self.right_first_dot = clicked_dot
+                # draw dashed previews to the remaining dots
+                for d in self.dot_grid_right:
+                    if d.visible and not d.selected and d is not self.right_first_dot:
+                        cx1, cy1 = self.right_first_dot.center()
+                        cx2, cy2 = d.center()
+                        line_id = self.canvas.create_line(
+                            cx1, cy1, cx2, cy2,
+                            fill="black", dash=(4, 2), width=2, tags="dots"
+                        )
+                        self.dashed_line_ids.append(line_id)
+                return
+
+            # second FR‐4 completion (either correct or incorrect line):
+            # remove any dashed previews
+            for line_id in self.dashed_line_ids:
+                self.canvas.delete(line_id)
+            self.dashed_line_ids = []
+
+            # determine if the two selected dots form the correct line
+            dot1 = self.right_first_dot
+            dot2 = clicked_dot
+            good_line = False
+            if "sample_line" in self.current_trial_config:
+                pair = self.current_trial_config["sample_line"][0]
+                chosen = sorted([(dot1.row, dot1.col), (dot2.row, dot2.col)])
+                if chosen == sorted([pair[0], pair[1]]):
+                    good_line = True
+
+            # draw solid or red dashed line
+            cx1, cy1 = dot1.center()
+            cx2, cy2 = dot2.center()
+            if good_line:
+                self.canvas.create_line(cx1, cy1, cx2, cy2,
+                                        fill="black", width=3, tags="dots")
             else:
-                if not self.right_first_dot:
-                    self.right_first_dot = clicked_dot
-                else:
-                    d1 = self.right_first_dot
-                    d2 = clicked_dot
-                    if d1 != d2:
-                        self.canvas.unbind("<Button-1>")
-                        self.root.after(1000, self.provide_reinforcement)
-                    else:
-                        self.canvas.unbind("<Button-1>")
-                        self.root.after(1000, self.blackout_then_repeat)
+                self.canvas.create_line(cx1, cy1, cx2, cy2,
+                                        fill="red", dash=(4, 2), width=3, tags="dots")
+
+            self.canvas.unbind("<Button-1>")
+            self.root.after(1000,
+                self.provide_reinforcement if good_line else self.blackout_then_repeat
+            )
 
     ########## TIMEOUT / ITI / REINFORCEMENT
     def blackout_then_repeat(self):
