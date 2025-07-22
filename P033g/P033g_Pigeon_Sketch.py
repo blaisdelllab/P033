@@ -964,6 +964,21 @@ class MainScreen:
         if clicked_dot.peck_count >= self.FR_requirement:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
+            
+                # — special case for phase 1.c: single‐step discrimination —
+            if self.phase_key == "1c":
+                # stop listening for more clicks
+                self.canvas.unbind("<Button-1>")
+            
+                # was it the correct dot?
+                sample_dot = self.current_trial_config["sample_dots"][0]
+                if clicked_dot.row == sample_dot.row and clicked_dot.col == sample_dot.col:
+                    # correct: give reinforcement
+                    self.root.after(1000, self.provide_reinforcement)
+                else:
+                    # incorrect: timeout and repeat
+                    self.root.after(1000, self.blackout_then_repeat)
+                return
 
             # —— NEW: immediate failure if first‐selection is the lone distractor ——
             # Identify if this is the very first FR-complete on this trial:
