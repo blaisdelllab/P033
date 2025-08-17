@@ -861,28 +861,58 @@ class MainScreen:
                     if rd:
                         rd.visible = True
                         rd.color = sd.color
-            
-                if "distractor_dot" not in self.current_trial_config:
-                    forbidden_coords = set((d.row, d.col) for d in sample_dots)
-                    for d in sample_dots:
-                        forbidden_coords.update({
-                            (d.row + 1, d.col),
-                            (d.row - 1, d.col),
-                            (d.row, d.col + 1),
-                            (d.row, d.col - 1)
-                        })
-                    distractor_candidates = [
-                        d for d in self.dot_grid_right
-                        if not d.visible and (d.row, d.col) not in forbidden_coords
-                    ]
-                    dist = choice(distractor_candidates) if distractor_candidates else None
+
+                # --- CHANGED: 3b_random now shows TWO distractors ---
+                if self.phase_key == "3b_random":
+                    if "distractor_dots" not in self.current_trial_config:
+                        forbidden_coords = set((d.row, d.col) for d in sample_dots)
+                        for d in sample_dots:
+                            forbidden_coords.update({
+                                (d.row + 1, d.col),
+                                (d.row - 1, d.col),
+                                (d.row, d.col + 1),
+                                (d.row, d.col - 1)
+                            })
+                        distractor_candidates = [
+                            d for d in self.dot_grid_right
+                            if not d.visible and (d.row, d.col) not in forbidden_coords
+                        ]
+                        # pick up to two distractors
+                        if len(distractor_candidates) >= 2:
+                            distractors = sample(distractor_candidates, 2)
+                        else:
+                            distractors = distractor_candidates
+                        self.current_trial_config["distractor_dots"] = distractors
+                    else:
+                        distractors = self.current_trial_config["distractor_dots"]
+
+                    for dist in distractors:
+                        dist.visible = True
+                        dist.color = "#3b3b3b"
+
+                else:
+                    # original single distractor logic for 2b_random and 3a_standard
+                    if "distractor_dot" not in self.current_trial_config:
+                        forbidden_coords = set((d.row, d.col) for d in sample_dots)
+                        for d in sample_dots:
+                            forbidden_coords.update({
+                                (d.row + 1, d.col),
+                                (d.row - 1, d.col),
+                                (d.row, d.col + 1),
+                                (d.row, d.col - 1)
+                            })
+                        distractor_candidates = [
+                            d for d in self.dot_grid_right
+                            if not d.visible and (d.row, d.col) not in forbidden_coords
+                        ]
+                        dist = choice(distractor_candidates) if distractor_candidates else None
+                        if dist is not None:
+                            self.current_trial_config["distractor_dot"] = dist
+
+                    dist = self.current_trial_config.get("distractor_dot", None)
                     if dist is not None:
-                        self.current_trial_config["distractor_dot"] = dist
-            
-                dist = self.current_trial_config.get("distractor_dot", None)
-                if dist is not None:
-                    dist.visible = True
-                    dist.color = "#3b3b3b"
+                        dist.visible = True
+                        dist.color = "#3b3b3b"
         self.draw_all_dots()
         self.right_first_dot = None
         for line_id in self.dashed_line_ids:
@@ -965,7 +995,7 @@ class MainScreen:
             clicked_dot.selected = True
             clicked_dot.draw(self.canvas, highlight=True)
             
-                # — special case for phase 1.c: single‐step discrimination —
+            # — special case for phase 1.c: single‐step discrimination —
             if self.phase_key == "1c":
                 # stop listening for more clicks
                 self.canvas.unbind("<Button-1>")
@@ -980,23 +1010,18 @@ class MainScreen:
                     self.root.after(1000, self.blackout_then_repeat)
                 return
 
-            # —— NEW: immediate failure if first‐selection is the lone distractor ——
-            # Identify if this is the very first FR-complete on this trial:
+            # —— immediate failure if first‐selection is any distractor ——
             first_FR = (self.right_first_dot is None)
-            # Check if this dot is not one of the two correct endpoints:
             endpoints = [(sd.row, sd.col) for sd in self.current_trial_config["sample_dots"]]
             is_distractor = first_FR and ((clicked_dot.row, clicked_dot.col) not in endpoints)
 
             if is_distractor:
-                # immediately time‐out and start correction
                 self.canvas.unbind("<Button-1>")
                 self.root.after(1000, self.blackout_then_repeat)
                 return
-            # ————————————————————————————————————————————————————————————
 
             # Otherwise, treat as first‐endpoint pick or second pick:
             if first_FR:
-                # this is the first endpoint selection
                 self.right_first_dot = clicked_dot
                 # draw dashed previews to the remaining dots
                 for d in self.dot_grid_right:
@@ -1011,12 +1036,10 @@ class MainScreen:
                 return
 
             # second FR‐4 completion (either correct or incorrect line):
-            # remove any dashed previews
             for line_id in self.dashed_line_ids:
                 self.canvas.delete(line_id)
             self.dashed_line_ids = []
 
-            # determine if the two selected dots form the correct line
             dot1 = self.right_first_dot
             dot2 = clicked_dot
             good_line = False
@@ -1026,7 +1049,6 @@ class MainScreen:
                 if chosen == sorted([pair[0], pair[1]]):
                     good_line = True
 
-            # draw solid or red dashed line
             cx1, cy1 = dot1.center()
             cx2, cy2 = dot2.center()
             if good_line:
