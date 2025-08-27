@@ -280,7 +280,7 @@ class MainScreen:
         else:
             self.box_number = "NA"
 
-        self.max_trials = 50 if self.phase_key == "2b_random" else 90
+        self.max_trials = {"2b_random": 50, "3b_random": 30}.get(self.phase_key, 90)
         self.trial_counter = 0
         self.attempt_counter = 0
         self.FR_requirement = 4
