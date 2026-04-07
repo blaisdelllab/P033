@@ -1,12 +1,14 @@
+# P033 – Stained Glass Art Program
+
 # This is a python program written by Paul Gan, Robert Tsai, Cameron Guo, & 
-# Cyrus Kirkmanspring of 2022. The goal of the program was to create a 
-# "stained-glass" type of canvas for pigeons to draw on.
+# Cyrus Kirkman originally in the Spring of 2022. The goal of the program was
+# to create a "stained-glass" type of canvas for pigeons to draw on.
 
 # This version of the program adopted a "press-to-play" procedure wherein every
 # 60 s the canvas would go blank and a key would appear. Pigeons needed to 
 # peck this key to access their canvas.
 
-# It was last updated Jul 22, 2024
+# It was last updated April 07, 2026
 
 # First we import the libraries relevant for this project
 from tkinter import Tk, Canvas, BOTH
@@ -96,6 +98,13 @@ class Paint:
             
             # Canvas save directory
             self.save_directory = str(path.expanduser('~'))+"/Desktop/Data/Pigeon_Art"
+            # Create macro Canvas save directory if it does not exist
+            try:
+                if not path.isdir(self.save_directory):
+                    mkdir(path.join(self.save_directory))
+                    print("** NEW PIGEON ART FOLDER CREATED **")
+            except FileExistsError:
+                pass
             
         else:
             self.width, self.height = 1024, 500 #768
